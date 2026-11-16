@@ -3,6 +3,11 @@ import https from 'node:https';
 import { createHash } from 'node:crypto';
 export class LastfmError extends Error {constructor(readonly code:number,message:string){super(message);}}
 export type LastfmTransport=(method:'GET'|'POST',parameters:Record<string,string>,signal?:AbortSignal)=>Promise<any>;
+export function lastfmResponseShape(result:unknown){
+ const response=result as {token?:unknown}|null;
+ const token=response&&typeof response==='object'?response.token:undefined;
+ return {responseType:result===null?'null':Array.isArray(result)?'array':typeof result,hasToken:!!response&&Object.prototype.hasOwnProperty.call(response,'token'),tokenType:typeof token,tokenLength:typeof token==='string'?token.length:null};
+}
 export function lastfmSignature(parameters:Record<string,string>,secret:string){
  const text=Object.keys(parameters).filter(key=>!['format','callback','api_sig'].includes(key)).sort().map(key=>key+parameters[key]).join('');
  return createHash('md5').update(text+secret,'utf8').digest('hex');
@@ -27,7 +32,14 @@ export class LastfmClient {
   const signed={...parameters,method,api_key:this.apiKey};
   return this.transport(method.startsWith('track.')?'POST':'GET',{...signed,api_sig:lastfmSignature(signed,this.secret),format:'json'},signal);
  }
- async token(signal?:AbortSignal):Promise<string>{const result=await this.call('auth.getToken',{},signal);if(typeof result?.token!=='string'||!/^\w{16,128}$/.test(result.token))throw new Error(runtimeMessage('runtime105'));return result.token;}
+ async token(signal?:AbortSignal):Promise<string>{
+  const result=await this.call('auth.getToken',{},signal);
+  if(typeof result?.token!=='string'||!/^\w{16,128}$/.test(result.token)){
+   console.warn('[Last.fm] Authorization response rejected',lastfmResponseShape(result));
+   throw new Error(runtimeMessage('runtime105'));
+  }
+  return result.token;
+ }
  async session(token:string,signal?:AbortSignal):Promise<{key:string;name:string}>{
   const result=await this.call('auth.getSession',{token},signal),session=result?.session;
   if(typeof session?.key!=='string'||!/^\w{16,128}$/.test(session.key)||typeof session?.name!=='string'||!session.name.trim())throw new Error(runtimeMessage('runtime106'));

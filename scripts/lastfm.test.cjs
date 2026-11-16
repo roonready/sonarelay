@@ -1,6 +1,6 @@
 require('./register-ts.cjs');
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs/promises'),os=require('node:os'),path=require('node:path'),crypto=require('node:crypto');
-const {LastfmClient,LastfmError,lastfmSignature}=require('../src/main/lastfm/client.ts');
+const {LastfmClient,LastfmError,lastfmSignature,lastfmResponseShape}=require('../src/main/lastfm/client.ts');
 const {LastfmStorage}=require('../src/main/lastfm/storage.ts');
 const {LastfmTracker}=require('../src/main/lastfm/tracker.ts');
 const {LastfmService}=require('../src/main/lastfm/service.ts');
@@ -19,6 +19,16 @@ test('Last.fm signature uses sorted UTF-8 raw parameters, excludes format/callba
 test('ignored Last.fm responses are errors rather than false success',async()=>{
  const {client}=mockClient(()=>({scrobbles:{'@attr':{accepted:0}},nowplaying:{ignoredMessage:{code:'1'}}}));
  await assert.rejects(client.submit('track.scrobble',{}),/не принят/);await assert.rejects(client.submit('track.updateNowPlaying',{}),/не принят/);
+});
+
+test('authorization diagnostics describe malformed responses without exposing credentials or token values',()=>{
+ const token='secret-token-value',apiKey='private-api-key',secret='private-shared-secret';
+ const summary=lastfmResponseShape({token,apiKey,secret});
+ assert.deepEqual(summary,{responseType:'object',hasToken:true,tokenType:'string',tokenLength:token.length});
+ for(const value of [token,apiKey,secret])assert.ok(!JSON.stringify(summary).includes(value));
+ assert.equal(lastfmResponseShape({token:123}).tokenType,'number');
+ assert.equal(lastfmResponseShape({}).hasToken,false);
+ assert.equal(lastfmResponseShape(null).responseType,'null');
 });
 test('one Now Playing and one scrobble after half duration; timestamp is first observed listening',()=>{
  const tracker=new LastfmTracker();const first=collect(tracker,49);assert.equal(first.filter(e=>e.method==='track.updateNowPlaying').length,1);assert.ok(!first.some(e=>e.method==='track.scrobble'));

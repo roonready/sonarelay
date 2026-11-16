@@ -2,6 +2,23 @@
 
 Versions follow Semantic Versioning. Stable releases use `x.y.z`; beta releases use `x.y.z-beta.N`.
 
+## [1.1.1-beta.1] - 2026-11-16
+
+### Fixed
+
+- Show the specific localized Last.fm error when Electron wraps an IPC failure in another Error object.
+
+### Added
+
+- Safe diagnostics for rejected Last.fm authorization responses, reporting response type and token length without exposing tokens or API credentials.
+- Regression tests for wrapped authorization errors and secret-free diagnostics.
+
+### Known limitations
+
+- This prerelease is intended for testing Last.fm connection. A reported failure to recognize an authorization token is still under investigation; isolated requests from Node.js and Electron succeeded.
+- Last.fm requires locally configured application credentials and browser authorization. Credentials are not included in the installer.
+- Stable installations do not automatically receive this beta. Install its Windows x64 installer manually to opt in.
+
 ## [1.1.0] - 2026-11-16
 
 ### Added

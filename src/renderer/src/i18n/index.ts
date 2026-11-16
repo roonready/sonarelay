@@ -51,8 +51,20 @@ const runtimeMessages = Object.entries(ru).map(([key, value]) => {
 });
 
 /** Translate only app-owned messages, never device names or music content. */
+function errorMessage(input: unknown): string {
+  let value = String(input ?? '');
+  // String(Error) adds an outer "Error:" around Electron's remote-error wrapper.
+  // Unwrap in layers rather than depending on one particular nesting order.
+  for (let i = 0; i < 6; i++) {
+    const next = value.replace(/^Error:\s*/, '').replace(/^Error invoking remote method '[^']+':\s*/, '');
+    if (next === value) break;
+    value = next;
+  }
+  return value;
+}
+
 export function localizeMessage(input: unknown, depth = 0): string {
-  const value = String(input ?? '').replace(/^Error invoking remote method '[^']+': (?:Error: )?/, '').replace(/^Error: /, '');
+  const value = errorMessage(input);
   if (!value || depth > 4) return value;
   if (i18n.global.te(value)) return i18n.global.t(value);
   const stateKey: Record<string, string> = {
@@ -74,7 +86,7 @@ export function localizeMessage(input: unknown, depth = 0): string {
 /** Raw OS/library errors are diagnostics, not translatable application copy. */
 export function localizeError(input: unknown): string {
   const value = localizeMessage(input);
-  const raw = String(input ?? '').replace(/^Error invoking remote method '[^']+': (?:Error: )?/, '').replace(/^Error: /, '');
+  const raw = errorMessage(input);
   if (!raw || value !== raw || runtimeMessages.some(entry => entry.pattern.test(raw))) return value;
   if (/E(?:CONN|HOST|NET|PIPE|TIMEDOUT)|fetch|socket|network/i.test(raw)) return i18n.global.t('errors.network');
   if (/NotAllowedError|Permission denied/i.test(raw)) return i18n.global.t('errors.permission');

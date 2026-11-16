@@ -51,6 +51,8 @@ test('active backend errors and status messages react to locale changes, includi
  assert.equal(rendered,'Metadata temporarily unavailable: The selected receiver is unavailable');
  selectLanguage('ru');await nextTick();assert.match(rendered,/Метаданные временно/);stop();
  selectLanguage('en');assert.equal(localizeMessage("Error invoking remote method 'live:connect': Error: "+input),'Metadata temporarily unavailable: The selected receiver is unavailable');
+ assert.equal(localizeError(new Error("Error invoking remote method 'lastfm:confirm': Error: "+input)),'Metadata temporarily unavailable: The selected receiver is unavailable');
+ assert.equal(localizeError(new Error("Error invoking remote method 'lastfm:confirm': Error: "+message('runtime114'))),en.runtime114);
  assert.equal(localizeMessage('PLAYING'),'Playing');assert.equal(localizeError('connect ECONNREFUSED 192.168.1.20'),en['errors.network']);
  assert.equal(localizeError('NotAllowedError: Permission denied'),en['errors.permission']);
  assert.equal(localizeError('unrecognized library error'),en['errors.unknown']);
