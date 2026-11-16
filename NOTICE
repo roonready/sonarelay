@@ -1,0 +1,9 @@
+SonaRelay
+Copyright 2026 SonaRelay contributors
+
+SonaRelay source code is licensed under the Apache License, Version 2.0.
+Third-party dependencies retain their respective licenses.
+The bundled FFmpeg binary and its license are distributed with the application.
+
+Yandex Music, Last.fm, WiiM, Bluesound, BluOS, AirPlay, Google Cast,
+Windows, Electron and GitHub are names or trademarks of their respective owners.

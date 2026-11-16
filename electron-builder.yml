@@ -1,0 +1,44 @@
+appId: local.sonarelay
+productName: SonaRelay
+executableName: SonaRelay
+artifactName: SonaRelay-Setup-${version}-${arch}.${ext}
+electronDist: node_modules/electron/dist
+directories:
+  output: dist
+files:
+  - out/**/*
+  - package.json
+  - assets/icon.png
+  - LICENSE
+  - NOTICE
+  - '!**/lastfm-api.json'
+  - '!**/.env*'
+  - '!project-history.md'
+asar: true
+asarUnpack:
+  - node_modules/ffmpeg-static/ffmpeg.exe
+  - node_modules/ffmpeg-static/ffmpeg.exe.LICENSE
+  - node_modules/ffmpeg-static/ffmpeg.exe.README
+npmRebuild: false
+win:
+  icon: assets/icon.ico
+  target:
+    - target: nsis
+      arch:
+        - x64
+  signExecutable: false
+nsis:
+  differentialPackage: true
+  installerIcon: assets/icon.ico
+  uninstallerIcon: assets/icon.ico
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: SonaRelay
+  deleteAppDataOnUninstall: false
+  runAfterFinish: false
+  installerLanguages:
+    - ru_RU
+    - en_US

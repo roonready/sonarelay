@@ -1,0 +1,11 @@
+node_modules/
+dist/
+out/
+.verification/
+*.log
+lastfm-api.json
+.env
+.env.local
+.env.*
+electron-builder.env
+/project-history.md
