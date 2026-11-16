@@ -78,6 +78,11 @@ test('release metadata, version and public feed configuration agree; no credenti
   const config = require('../electron-builder.config.cjs'), pkg = require('../package.json');
   assert.deepEqual(releaseVersion('1.2.0-beta.3'), { version: '1.2.0-beta.3', channel: 'beta', releaseType: 'prerelease' });
   assert.throws(() => releaseVersion('1.2.0-rc.1')); assert.throws(() => releaseVersion('v1.2.0'));
+  assert.equal(releaseVersion('1.2.0-beta.1', 'beta').channel, 'beta');
+  assert.equal(releaseVersion('1.2.0', 'stable').channel, 'latest');
+  assert.throws(() => releaseVersion('1.2.0', 'beta'), /does not match/);
+  assert.throws(() => releaseVersion('1.2.0-beta.1', 'stable'), /does not match/);
+  assert.throws(() => releaseVersion('1.2.0', 'other'), /channel/);
   assert.equal(config.publish[0].channel, releaseVersion(pkg.version).channel);
   assert.equal(config.publish[0].private, false); assert.equal(config.publish[0].provider, 'github');
   assert.equal(config.publish[0].owner, 'roonready'); assert.equal(config.publish[0].repo, 'sonarelay');

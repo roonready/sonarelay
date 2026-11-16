@@ -63,8 +63,9 @@ export function readMusicMetadata(catalog: Record<string,string> = {}):Omit<Musi
  }
  const slider=scope?.querySelector('[aria-label*="таймкод"]');
  const numeric=(value:unknown)=>{if(value===null||value===undefined||value==='')return null;const number=Number(value);return Number.isFinite(number)&&number>=0?number:null;};
- const sliderPosition=numeric(slider?.getAttribute('aria-valuenow')??(slider as HTMLInputElement|null)?.value);
- const sliderDuration=numeric(slider?.getAttribute('aria-valuemax')??(slider as HTMLInputElement|null)?.max);
+ const range=slider?.tagName==='INPUT'&&slider.getAttribute('type')==='range'?slider as HTMLInputElement:null;
+ const sliderPosition=numeric(slider?.getAttribute('aria-valuenow')??range?.value);
+ const sliderDuration=numeric(slider?.getAttribute('aria-valuemax')??range?.max);
  const duration=media&&Number.isFinite(media.duration)&&media.duration>0?media.duration:sliderDuration!==null&&sliderDuration>1?sliderDuration:null;
  const position=media&&Number.isFinite(media.currentTime)?media.currentTime:sliderDuration!==null&&sliderDuration>1?sliderPosition:null;
  function time(value:number|null){
@@ -102,7 +103,7 @@ export function readMusicMetadata(catalog: Record<string,string> = {}):Omit<Musi
  field('original-codec',message('metadataText049'),'','',message('metadataText051'));
  field('original-bitrate',message('metadataText050'),'','',message('metadataText051'));
  field('original-depth',message('metadataText052'),'','',message('metadataText053'));
- field('page-url',message('metadataText054'),location.href,message('metadataText055'),message('metadataText056'));
+ field('page-url',message('metadataText054'),new URL(location.href).origin+new URL(location.href).pathname,message('metadataText055'),message('metadataText056'));
  field('page-title',message('metadataText057'),document.title,message('metadataText001'),'document.title');
  const value=(id:string)=>fields.find(item=>item.id===id)?.value??'';
  return {fields,artwork:cover||null,playback:{

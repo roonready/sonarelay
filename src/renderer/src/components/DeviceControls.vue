@@ -10,6 +10,8 @@ import { startLiveCapture, requestMusicStream } from '../services/live-capture';
 import { SelectionRouter } from '../services/selection-router';
 import { LOCAL_OUTPUT_ID } from '../services/output';
 import PlaybackWait from './PlaybackWait.vue';
+import { useRadio } from '../stores/radio';
+const radio=useRadio();
 const devices=useDevices();
 const state=ref<PlaybackState>({deviceId:'',status:'lastfm.disconnected',error:'',busy:false,volume:null,httpRequests:0});
 const busy=ref(false),message=ref(''),live=ref<LiveState>();
@@ -36,6 +38,12 @@ const unsubscribe=ipc.onLiveState(value=>{
 });
 async function routeSelection(id:string){
  const current=++revision;
+ if(radio.state.mode!=='music'){
+  waitingSince.value=null;message.value='';
+  await router.stop();
+  if(radio.active)await ipc.radioOutput(id===LOCAL_OUTPUT_ID?'':id).catch(()=>{});
+  return;
+ }
  waitingSince.value=id&&id!==LOCAL_OUTPUT_ID?Date.now():null;
  live.value=undefined;
  busy.value=true;state.value.error='';message.value=id===LOCAL_OUTPUT_ID?'playback.switchLocal':'playback.connectReceiver';
@@ -61,12 +69,15 @@ async function command(command:PlaybackCommand,value?:number){
  }catch(error){waitingSince.value=null;state.value.error=String(error);}
  finally{busy.value=false;}
 }
-watch(()=>devices.selectedId,id=>{void routeSelection(id);},{flush:'sync',immediate:true});
+watch([()=>devices.selectedId,()=>radio.state.mode],([id,mode],previous)=>{
+ if(mode==='music'||id!==previous?.[0])void routeSelection(id);
+ else void router.stop();
+},{flush:'sync',immediate:true});
 onUnmounted(()=>{disposed=true;revision++;unsubscribe();void router.stop().catch(console.error);});
 function volume(event:Event){void command('volume',Number((event.target as HTMLInputElement).value));}
 </script>
 <template>
- <section v-if="isLocal||selected" class="controls" :aria-label="t('playback.controls')">
+ <section v-if="radio.state.mode==='music'&&(isLocal||selected)" class="controls" :aria-label="t('playback.controls')">
   <h2>{{ isLocal?t('devices.local'):selected?.name }}</h2>
   <template v-if="isLocal"><p>{{ t('playback.localHelp') }}</p></template>
   <template v-else>

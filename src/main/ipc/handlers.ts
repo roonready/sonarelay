@@ -1,12 +1,16 @@
 import { message as runtimeMessage } from '../../shared/messages';
-import { app, ipcMain, powerSaveBlocker, type BrowserWindow } from 'electron';
+import { app, ipcMain, powerSaveBlocker, shell, type BrowserWindow } from 'electron';
 import path from 'node:path';
 import { CaptureRecorder } from '../audio/capture-recorder';
 import { LiveSession } from '../audio/live-session';
 import type { Discovery } from '../discovery/ssdp';
 import { Player } from '../dlna/player';
-import type { PlaybackCommand } from '../../shared/types';
-export function registerHandlers(window: BrowserWindow, discovery: Discovery) {
+import type { PlaybackCommand, MusicPlaybackSnapshot } from '../../shared/types';
+import { RadioService } from '../radio/service';
+import { NativeOutput } from '../radio/native-output';
+import { MusicConsentStore } from '../runtime/music-consent';
+import { SOURCE_REPOSITORY_URL } from '../../shared/music-consent';
+export function registerHandlers(window: BrowserWindow, discovery: Discovery, sources?: {openMusic():Promise<void>;closeMusic():void;onRadioPlayback?(playback:MusicPlaybackSnapshot|undefined):void}) {
   // BrowserWindow.webContents must not be read after the native window is destroyed.
   const contents=window.webContents;
   let disposed=false;
@@ -22,7 +26,28 @@ export function registerHandlers(window: BrowserWindow, discovery: Discovery) {
     });
   };
   const player = new Player();
+  const musicConsent=new MusicConsentStore(app.getPath('userData'),app.getPath('sessionData'));
+  handle('music-consent:get',()=>musicConsent.state());
+  handle('music-consent:accept',(_event,version:unknown)=>musicConsent.accept(version));
+  handle('source:repository',()=>shell.openExternal(SOURCE_REPOSITORY_URL));
   const live = new LiveSession(() => discovery.state.selectedAddress);
+  let musicBegin: Promise<unknown> | undefined;
+  const radio = new RadioService(live,id=>discovery.state.devices.find(device=>device.id===id),()=>discovery.state.selectedAddress,
+    async()=>{sources?.closeMusic();await musicBegin?.catch(()=>{});await player.dispose();await live.stop();},
+    ()=>new NativeOutput(app.isPackaged?path.join(process.resourcesPath,'native-audio'):path.join(app.getAppPath(),'assets/native')));
+  const sendRadio=()=>{if(!disposed&&!contents.isDestroyed())contents.send('radio:state',radio.state);};
+  radio.on('state',sendRadio);
+  const sendRadioPlayback=(playback:MusicPlaybackSnapshot|undefined)=>sources?.onRadioPlayback?.(playback);
+  radio.on('playback',sendRadioPlayback);
+  handle('radio:get',()=>radio.state);
+  handle('radio:toggle',(_event,id:unknown,output:unknown)=>{
+    if(typeof id!=='string'||typeof output!=='string')throw new Error('Forbidden');
+    return radio.toggle(id,output);
+  });
+  handle('radio:output',(_event,output:unknown)=>{
+    if(typeof output!=='string')throw new Error('Forbidden');return radio.route(output);
+  });
+  handle('source:music',async()=>{await musicConsent.requireAccepted();if(radio.state.mode==='music'){await sources?.openMusic();return radio.state;}await radio.stop();await sources?.openMusic();await radio.music();return radio.state;});
   let liveOperation = false;
   const authorize = (event:Electron.IpcMainInvokeEvent) => {
     if(event.sender!==contents)throw new Error('Forbidden');
@@ -30,11 +55,14 @@ export function registerHandlers(window: BrowserWindow, discovery: Discovery) {
   handle('live:begin', async(event,id:unknown,rate:unknown)=>{
     authorize(event);
     if(liveOperation)throw new Error(runtimeMessage('runtime093'));
+    if(radio.state.mode!=='music')throw new Error('radio.cancelled');
     const device=discovery.state.devices.find(d=>d.id===id);
     if(!device||typeof rate!=='number')throw new Error(runtimeMessage('runtime094'));
     liveOperation=true;
-    try{await player.dispose();return await live.begin(device,discovery.state.selectedAddress,rate);}
-    finally{liveOperation=false;}
+    const operation=(async()=>{await player.dispose();return live.begin(device,discovery.state.selectedAddress,rate);})();
+    musicBegin=operation;
+    try{return await operation;}
+    finally{if(musicBegin===operation)musicBegin=undefined;liveOperation=false;}
   });
   handle('live:pcm',(event,id:unknown,data:Uint8Array)=>{
     authorize(event);if(typeof id!=='string')throw new Error('Forbidden');live.push(id,data);
@@ -52,12 +80,14 @@ export function registerHandlers(window: BrowserWindow, discovery: Discovery) {
     if(powerBlocker!==undefined){powerSaveBlocker.stop(powerBlocker);powerBlocker=undefined;}
   };
   const sendLive=()=>{
-    if(live.state.active && powerBlocker===undefined)powerBlocker=powerSaveBlocker.start('prevent-app-suspension');
-    if(!live.state.active)releasePowerBlocker();
+    const radioActive=['connecting','playing'].includes(radio.state.status);
+    if((live.state.active||radioActive) && powerBlocker===undefined)powerBlocker=powerSaveBlocker.start('prevent-app-suspension');
+    if(!live.state.active&&!radioActive)releasePowerBlocker();
     if(!disposed&&!contents.isDestroyed())contents.send('live:state',live.state);
   };
   live.on('state',sendLive);
-  const rendererGone=()=>{void live.stop().catch(console.error);};
+  radio.on('state',sendLive);
+  const rendererGone=()=>{void radio.stop().catch(console.error);void live.stop().catch(console.error);};
   contents.on('render-process-gone',rendererGone);
   contents.on('did-start-loading',rendererGone);
   const recorder = new CaptureRecorder(path.join(app.getPath('userData'), 'captures'));
@@ -103,19 +133,23 @@ export function registerHandlers(window: BrowserWindow, discovery: Discovery) {
     if(cleanupPromise)return cleanupPromise;
     disposed=true;
     live.off('state',sendLive);
+    radio.off('state',sendRadio);radio.off('state',sendLive);
     releasePowerBlocker();
     contents.removeListener('render-process-gone',rendererGone);
     contents.removeListener('did-start-loading',rendererGone);
     for(const channel of ['live:begin','live:pcm','live:connect','live:stop'])ipcMain.removeHandler(channel);
+    for(const channel of ['radio:get','radio:toggle','radio:output','source:music'])ipcMain.removeHandler(channel);
+    for(const channel of ['music-consent:get','music-consent:accept','source:repository'])ipcMain.removeHandler(channel);
     ipcMain.removeListener('capture:pcm', onPcm);
     ipcMain.removeHandler('capture:begin'); ipcMain.removeHandler('capture:finish');
     ipcMain.removeHandler('playback:command');
     discovery.off('state', send);
     ipcMain.removeHandler('discovery:state'); ipcMain.removeHandler('discovery:scan');
+    const radioShutdown=radio.dispose();
     cleanupPromise=(async()=>{
       await Promise.allSettled([...pending]);
       try{recorder.dispose();}catch(error){console.error('WAV finalization:',error);}
-      const results=await Promise.allSettled([live.stop(),player.dispose()]);
+      const results=await Promise.allSettled([radioShutdown,live.stop(),player.dispose()]);
       for(const result of results)if(result.status==='rejected')console.error('Playback shutdown:',result.reason);
     })();
     return cleanupPromise;

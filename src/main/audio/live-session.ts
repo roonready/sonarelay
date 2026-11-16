@@ -5,11 +5,13 @@ import { interfaces } from '../network/interfaces';
 import { receiverController, type ReceiverController } from '../receivers/controller';
 import { AudioEngine } from './audio-engine';
 import { YandexMusicSource } from './yandex-source';
+import type { AudioSource } from './audio-source';
 import { AirplayOutput } from '../airplay2/output';
 import { LiveServer } from '../media-server/live-server';
 import type { RendererDevice, LiveState, PlaybackCommand } from '../../shared/types';
 export class LiveSession extends EventEmitter {
- private source?:YandexMusicSource;
+ private source?:AudioSource;
+ private streamTitle='Яндекс Музыка — SonaRelay Live';
  private engine?:AudioEngine;
  private server?:LiveServer;
  private airplay?:AirplayOutput;
@@ -51,10 +53,11 @@ export class LiveSession extends EventEmitter {
   if(this.airplay){this.state.packets=this.airplay.packets;this.state.timingExchanges=this.airplay.timingExchanges;this.state.underruns=this.airplay.underruns;}
   this.emit('state',{...this.state});
  }
- async begin(device:RendererDevice,address:string,sampleRate:number):Promise<LiveState>{
+ async begin(device:RendererDevice,address:string,sampleRate:number,input?:{source:AudioSource;title:string}):Promise<LiveState>{
   if(this.commandBusy)throw new Error(runtimeMessage('runtime028'));
   await this.stop();
-  const source=new YandexMusicSource();
+  const source=input?.source??new YandexMusicSource();
+  this.streamTitle=input?.title??'Яндекс Музыка — SonaRelay Live';
   const engine=new AudioEngine(source,{sampleRate,channels:2,bitDepth:16});
   const server=new LiveServer();
   this.source=source;this.engine=engine;this.server=device.protocol==='airplay2'?undefined:server;this.controller=device.protocol==='airplay2'?undefined:receiverController(device,address);
@@ -71,7 +74,7 @@ export class LiveSession extends EventEmitter {
    this.timer=setInterval(()=>{
     if(!this.state.active)return;
     if(this.selectedAddress()!==address||!interfaces().some(i=>i.address===address)){void this.fail(runtimeMessage('runtime030'));return;}
-    if(Date.now()-this.lastInput>8000){void this.fail(runtimeMessage('runtime031'));return;}
+    if(Date.now()-(this.engine?.lastDataAt??this.lastInput)>8000){void this.fail(runtimeMessage('runtime031'));return;}
     this.publish();void this.checkPlayback();
    },1000);
    this.publish();return {...this.state};
@@ -80,7 +83,8 @@ export class LiveSession extends EventEmitter {
  push(sessionId:string,data:Uint8Array){
   if(!this.state.active||this.state.sessionId!==sessionId)throw new Error(runtimeMessage('runtime032'));
   if(!(data instanceof Uint8Array)||data.byteLength>65536||data.byteLength%4||!data.byteLength)throw new Error(runtimeMessage('runtime033'));
-  this.lastInput=Date.now();this.source!.push(Buffer.from(data));
+  if(!(this.source instanceof YandexMusicSource))throw new Error(runtimeMessage('runtime033'));
+  this.lastInput=Date.now();this.source.push(Buffer.from(data));
  }
  async connect(sessionId:string){
   if(this.commandBusy)throw new Error(runtimeMessage('runtime034'));
@@ -92,7 +96,7 @@ export class LiveSession extends EventEmitter {
   try{
    if(!this.engine?.bytes)throw new Error(runtimeMessage('runtime036'));
    if(this.airplay){const output=this.airplay;await output.play();this.playbackStartedAt=Date.now();ensureActive();const volume=await output.volume().catch(()=>null);ensureActive();this.state.volume=volume?.CurrentVolume??null;this.connected=true;this.awaitingPlayback=true;this.state.connected=true;this.state.status=runtimeMessage('runtime037');this.publish();return {...this.state};}
-   await controller.setUri(this.url,'Яндекс Музыка — SonaRelay Live',undefined,this.state.encoding==='mp3'?'audio/mpeg':'audio/flac');ensureActive();
+   await controller.setUri(this.url,this.streamTitle,undefined,this.state.encoding==='mp3'?'audio/mpeg':'audio/flac');ensureActive();
    await controller.play();ensureActive();
    const volume=await controller.volume().catch(()=>null);ensureActive();
    this.state.volume=volume?Number(volume.CurrentVolume):null;this.connected=true;this.awaitingPlayback=true;this.state.connected=true;this.state.status=runtimeMessage('runtime038', {p0: (this.state.encoding??'flac').toUpperCase()});this.publish();return {...this.state};
@@ -117,7 +121,7 @@ export class LiveSession extends EventEmitter {
     this.state.playbackReady=false;
     // Reconnect at the current PCM position after receiver pause; no stale queue.
     await this.controller!.stop();this.server!.disconnect();
-    await this.controller!.setUri(this.url,'Яндекс Музыка — SonaRelay Live',undefined,this.state.encoding==='mp3'?'audio/mpeg':'audio/flac');
+    await this.controller!.setUri(this.url,this.streamTitle,undefined,this.state.encoding==='mp3'?'audio/mpeg':'audio/flac');
     await this.controller!.play();
    }
    if(command==='volume'){

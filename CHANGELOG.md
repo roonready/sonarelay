@@ -2,6 +2,28 @@
 
 Versions follow Semantic Versioning. Stable releases use `x.y.z`; beta releases use `x.y.z-beta.N`.
 
+## [1.2.0-beta.1] - 2026-11-16
+
+### Added
+
+- A versioned first-use Yandex Music sign-in notice, with local acknowledgment, session-storage information and cancellation before switching sources.
+- Separate local `release:beta` and `release:stable` publishing commands with version/channel validation.
+- Direct internet radio sources: Наше Радио and Radio Calico, each with its own start/stop button.
+- Streaming HTTP redirects, optional ICY metadata, bounded PCM decoding using the bundled FFmpeg, and native Windows audio output through WinMM.
+- Radio output through the existing network receiver pipeline, with no additional media server.
+- Tests for redirects, interrupted streams, cancellation, station switching, native playback and the real application buttons.
+- Radio Now Playing and scrobbling through the shared Last.fm service, with catalog duration lookup, a four-minute fallback for unknown radio durations, and visible accepted-submission status.
+
+### Changed
+
+- Development and installed builds use separate Chromium profiles; a second launch of the same profile focuses the existing window instead of sharing its cache.
+- Yandex Music now opens only when its source button is selected. Radio playback does not create an embedded music browser or require browser cookies.
+- Radio and Yandex Music share Last.fm settings and submission handling. MusicBrainz is not used.
+
+### Validation
+
+- Real native playback and application button tests were performed on Windows 11. Windows 10 compatibility still requires a separate machine test.
+
 ## [1.1.1-beta.1] - 2026-11-16
 
 ### Fixed

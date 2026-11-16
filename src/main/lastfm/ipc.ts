@@ -4,11 +4,12 @@ import type { LastfmPreferences, MusicMetadataSnapshot } from '../../shared/type
 import { LastfmClient } from './client';
 import { lastfmCredentials, LastfmStorage } from './storage';
 import { LastfmService } from './service';
-export function registerLastfm(ui:WebContents){
+export function registerLastfm(ui:WebContents,credentialsFallback?:string){
  let closed=false,service:LastfmService|undefined;
  const channels:string[]=[];
  const ready=(async()=>{
-  const directory=app.getPath('userData'),credentials=await lastfmCredentials(directory);
+  const directory=app.getPath('userData');
+  const credentials=await lastfmCredentials(directory)??(credentialsFallback?await lastfmCredentials(credentialsFallback):undefined);
   if(closed)return;
   const storage=new LastfmStorage(directory,{available:()=>safeStorage.isAsyncEncryptionAvailable(),encrypt:value=>safeStorage.encryptStringAsync(value),decrypt:async value=>(await safeStorage.decryptStringAsync(value)).result});
   service=new LastfmService(storage,credentials?new LastfmClient(credentials.apiKey,credentials.secret):undefined,url=>shell.openExternal(url));

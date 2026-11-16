@@ -12,6 +12,14 @@ export interface DiscoveryState {
   scanning: boolean; error: string; lastScan: number | null;
 }
 export interface BridgeApi {
+  musicConsent(): Promise<import('./music-consent').MusicConsentState>;
+  acceptMusicConsent(version: number): Promise<void>;
+  openSourceRepository(): Promise<void>;
+  radioState(): Promise<import('./radio').RadioState>;
+  radioToggle(stationId: string, outputId: string): Promise<import('./radio').RadioState>;
+  radioOutput(outputId: string): Promise<import('./radio').RadioState>;
+  openMusic(): Promise<import('./radio').RadioState>;
+  onRadioState(callback: (state: import('./radio').RadioState) => void): () => void;
   getUpdateState(): Promise<AppUpdateState>;
   checkUpdates(): Promise<AppUpdateState>;
   installUpdate(): Promise<void>;
@@ -59,6 +67,7 @@ export interface MusicMetadataField {
  detail:string;
 }
 export interface MusicMetadataSnapshot {
+ source?:'music'|'radio';
  playback?:MusicPlaybackSnapshot;
  fields:MusicMetadataField[];
  artwork:string|null;
@@ -66,10 +75,12 @@ export interface MusicMetadataSnapshot {
  error:string;
 }
 export interface MusicPlaybackSnapshot {
+ source?:'music'|'radio';sourceId?:string;
  title:string;artist:string;album:string;trackId:string;
  duration:number|null;position:number|null;playing:boolean;rate:number;
 }
 export interface LastfmPreferences {scrobbling:boolean;nowPlaying:boolean}
 export interface LastfmState extends LastfmPreferences {
+ activity?:{kind:'nowPlaying'|'scrobble';artist:string;title:string;at:number};
  configured:boolean;connected:boolean;username:string;pendingAuthorization:boolean;busy:boolean;error:string;
 }

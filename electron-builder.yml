@@ -3,6 +3,9 @@ productName: SonaRelay
 executableName: SonaRelay
 artifactName: SonaRelay-Setup-${version}-${arch}.${ext}
 electronDist: node_modules/electron/dist
+extraResources:
+  - from: assets/native
+    to: native-audio
 directories:
   output: dist
 files:

@@ -2,9 +2,11 @@ const fs = require('node:fs');
 const path = require('node:path');
 const semver = require('semver');
 const root = path.join(__dirname, '..');
-function releaseVersion(version) {
+function releaseVersion(version, expectedChannel) {
   const parsed = semver.parse(version);
   if (!parsed || parsed.version !== version || parsed.build.length) throw new Error('Use a canonical Semantic Version without build metadata.');
+  if (expectedChannel !== undefined && !['beta', 'stable'].includes(expectedChannel)) throw new Error('Use --channel beta or --channel stable.');
+  if ((expectedChannel === 'stable' && parsed.prerelease.length) || (expectedChannel === 'beta' && !parsed.prerelease.length)) throw new Error(`Version ${version} does not match the ${expectedChannel} command. Set package.json and package-lock.json to the intended version first.`);
   if (!parsed.prerelease.length) return { version, channel: 'latest', releaseType: 'release' };
   if (parsed.prerelease.length === 2 && parsed.prerelease[0] === 'beta' && typeof parsed.prerelease[1] === 'number') return { version, channel: 'beta', releaseType: 'prerelease' };
   throw new Error('Only x.y.z and x.y.z-beta.N versions are supported.');

@@ -6,10 +6,11 @@
 
 ## English
 
-SonaRelay is a Windows app for listening to Yandex Music on your computer, network speaker, music player, or TV. Choose music in the familiar Yandex Music interface, and SonaRelay streams the audio to your selected device on your home network.
+SonaRelay is a Windows app for listening to internet radio and Yandex Music on your computer, network speaker, music player, or TV. Radio plays directly from the station's audio stream, without a browser or sign-in. Yandex Music remains available through its own button.
 
 ### Features
 
+- Play **Наше Радио** and **Radio Calico** directly, with one button per station.
 - Play through Windows audio output or a network receiver.
 - Discover receivers supporting DLNA, BluOS, AirPlay 2, and Google Cast.
 - Connect WiiM and other Squeezelite players without installing a separate LMS / Lyrion server.
@@ -19,7 +20,7 @@ SonaRelay is a Windows app for listening to Yandex Music on your computer, netwo
 ### Requirements
 
 - A computer running Windows 11, 64-bit.
-- Internet access and a Yandex Music account with access to the tracks you want to play.
+- Internet access. A Yandex Music account is needed only for Yandex Music; radio requires no account.
 - For network playback, a compatible receiver on the same home network as your computer, connected by Wi-Fi or Ethernet.
 
 Keep your computer switched on and SonaRelay running throughout playback.
@@ -38,7 +39,13 @@ For local builds and publishing, see [RELEASE.md](RELEASE.md). Version history i
 
 ### Start listening
 
-1. Sign in to Yandex Music on the right and play a track, album, or playlist.
+For radio, select **This computer (Windows)** or a network receiver, then press **Наше Радио** or **Radio Calico**. Press the same station again to stop. Choosing another station stops the previous one. The panel shows connecting, playing, stopped, or a connection error. Available station and track details appear automatically; metadata is optional.
+
+Radio uses the Windows audio output for local playback; adjust its volume in Windows. Radio tracks with an artist and title can be sent to Last.fm after connecting your account. MusicBrainz is not used.
+
+For Yandex Music:
+
+1. Press **Яндекс Музыка**, sign in on the right, and play a track, album, or playlist.
 2. To listen on your computer, leave **Receiver** set to **This computer (Windows)**.
 3. To listen on a speaker or player, wait for discovery to finish and select it from the same list. Streaming starts automatically.
 4. Allow a few seconds for the connection, especially with Google Cast receivers.
@@ -99,7 +106,9 @@ If Last.fm connection is available in your version, follow the steps below. If t
 
 Click **Disconnect** to disconnect your account. You can also revoke the app's access in your Last.fm account settings.
 
-Scrobbling also works when listening on your computer. A track must be longer than 30 seconds; a scrobble is submitted after half the track or four minutes of listening, whichever comes first. Pauses and seeking do not count as listening time. Tracks cannot be scrobbled if duration or playback position is unavailable.
+Last.fm works with both Yandex Music and radio, on your computer and on network receivers. A track must be longer than 30 seconds; a scrobble is submitted after half the track or four minutes of listening, whichever comes first. Radio uses Last.fm's catalog duration when available, or four minutes of confirmed listening when the duration is unknown. Both artist and title are required. Stops, buffering and seeking do not count as listening time. Yandex Music requires an available duration and playback position for scrobbling.
+
+The Last.fm settings show the last Now Playing update or scrobble accepted by the service, including the track and submission time.
 
 Failed submissions are not saved for later delivery when you are offline or Last.fm is unavailable. Last.fm errors do not interrupt music playback.
 
@@ -140,10 +149,11 @@ Your app profile is stored locally in `%APPDATA%\sonarelay`.
 
 ## Русский
 
-SonaRelay — приложение для Windows, с которым можно слушать Яндекс Музыку на компьютере, сетевой колонке, музыкальном плеере или телевизоре. Вы выбираете музыку в привычном интерфейсе Яндекс Музыки, а приложение передаёт звук на выбранное устройство в домашней сети.
+SonaRelay — приложение для Windows, с которым можно слушать интернет-радио и Яндекс Музыку на компьютере, сетевой колонке, музыкальном плеере или телевизоре. Радио воспроизводится напрямую из аудиопотока без браузера и авторизации. Яндекс Музыка доступна по отдельной кнопке.
 
 ### Что умеет приложение
 
+- Воспроизводить **«Наше Радио»** и **Radio Calico** напрямую — отдельной кнопкой для каждой станции.
 - Воспроизводить музыку через аудиовыход Windows или сетевой приёмник.
 - Находить устройства с поддержкой DLNA, BluOS, AirPlay 2 и Google Cast.
 - Подключать WiiM и другие плееры с Squeezelite без отдельной установки музыкального сервера LMS / Lyrion.
@@ -153,7 +163,7 @@ SonaRelay — приложение для Windows, с которым можно 
 ### Что понадобится
 
 - Компьютер с Windows 11, 64-разрядная версия.
-- Доступ к интернету и аккаунт Яндекс Музыки с доступом к нужным композициям.
+- Доступ к интернету. Аккаунт Яндекс Музыки нужен только для Яндекс Музыки; радио работает без аккаунта.
 - Для сетевого воспроизведения — совместимый приёмник в той же домашней сети, что и компьютер. Подключение может быть по Wi-Fi или кабелю.
 
 Компьютер должен оставаться включённым, а приложение — запущенным всё время прослушивания.
@@ -172,7 +182,13 @@ SonaRelay — приложение для Windows, с которым можно 
 
 ### Как начать слушать
 
-1. В правой части окна войдите в Яндекс Музыку и включите композицию, альбом или плейлист.
+Для радио выберите **«Этот компьютер (Windows)»** или сетевой приёмник, затем нажмите **«Наше Радио»** либо **Radio Calico**. Повторное нажатие той же кнопки останавливает поток. Выбор другой станции завершает предыдущую трансляцию. Панель показывает подключение, воспроизведение, остановку или ошибку. Сведения о станции и композиции появляются при наличии метаданных; их отсутствие не мешает звуку.
+
+При прослушивании радио на компьютере громкость регулируется в Windows. Композиции радио с известными исполнителем и названием можно отправлять в Last.fm после подключения аккаунта. MusicBrainz не используется.
+
+Для Яндекс Музыки:
+
+1. Нажмите **«Яндекс Музыка»**, войдите в аккаунт справа и включите композицию, альбом или плейлист.
 2. Для прослушивания на компьютере оставьте в списке **«Приёмник»** вариант **«Этот компьютер (Windows)»**.
 3. Для прослушивания на колонке или плеере дождитесь окончания поиска и выберите нужное устройство в том же списке. Передача звука начнётся автоматически.
 4. Дождитесь подключения. На некоторых устройствах, особенно Google Cast, запуск может занять несколько секунд.
@@ -233,7 +249,9 @@ Last.fm позволяет сохранять прослушанные комп�
 
 Для отключения нажмите **Disconnect**. При необходимости доступ приложения также можно отозвать в настройках аккаунта Last.fm.
 
-Скробблинг работает и при прослушивании на компьютере. Трек должен быть длиннее 30 секунд; запись отправляется после прослушивания половины композиции или четырёх минут — в зависимости от того, что наступит раньше. Паузы и перемотка не засчитываются как прослушивание. Если сведения о длительности или позиции недоступны, скроббл не отправляется.
+Last.fm работает и с Яндекс Музыкой, и с радио — на компьютере и сетевых приёмниках. Трек должен быть длиннее 30 секунд; запись отправляется после прослушивания половины композиции или четырёх минут — в зависимости от того, что наступит раньше. Для радио используется длительность из каталога Last.fm; если она неизвестна, нужны четыре минуты подтверждённого прослушивания. Обязательны исполнитель и название. Остановки, буферизация и перемотка не засчитываются. Для скробблинга Яндекс Музыки нужны доступные длительность и позиция.
+
+В настройках Last.fm показана последняя принятая сервисом отправка Now Playing или скроббла — с композицией и временем отправки.
 
 При отсутствии интернета или ошибке Last.fm неотправленные прослушивания не сохраняются для отправки позже. Ошибки Last.fm не останавливают музыку.
 

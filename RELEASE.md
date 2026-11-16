@@ -30,7 +30,7 @@ For an existing repository, inspect `git remote -v` and use its normal commit/pu
 
 ## GitHub token
 
-Publishing reads a GitHub Personal Access Token only from **GH_TOKEN** in the local process environment. Never put a real token in JSON, YAML, `.env` files, npm scripts, commits, command arguments, or the distributed app.
+Publishing reads a GitHub Personal Access Token from **GH_TOKEN** in the local process environment. If it is unset, the release command loads the project's ignored `.env` file. Keep that file local. Never put a real token in tracked JSON/YAML, npm scripts, commits, command arguments, or the distributed app. Environment values take precedence over `.env`.
 
 For an existing repository, a fine-grained PAT needs access to that repository and **Contents: Read and write** for releases and tags. Creating a repository additionally requires repository-creation permissions; you can create the repository in the GitHub UI instead. A classic PAT can use `public_repo` for public repositories.
 
@@ -81,20 +81,22 @@ npm.cmd run dist:unpacked
 
 The update flow is intended for NSIS-installed builds. Development runs do not check for updates.
 
+Development uses `%APPDATA%\sonarelay-dev`, while installed builds keep `%APPDATA%\sonarelay`. Chromium sessions and caches are separate, so running both does not make them share locked browser files. Each profile allows one running instance. Development can read the installed profile's Last.fm application keys as a fallback; its authorization session and browser logins remain separate. An explicit `--user-data-dir` is respected and does not use production credentials as a fallback.
+
 ## Publish an update
 
 1. Choose a new Semantic Version and update it with npm. Do not reuse a published version.
 2. Add a matching `## [<version>]` section and notes to `CHANGELOG.md`.
 3. Commit and push all source changes to the configured repository.
 4. Set `GH_TOKEN` in the current PowerShell session.
-5. Run `npm.cmd run release` locally on Windows x64.
+5. Run `npm.cmd run release:beta` or `npm.cmd run release:stable` locally on Windows x64. Each command checks that the package version belongs to its channel, preventing accidental publication to the other channel. The generic `release` command remains available for compatibility.
 
 Stable example:
 
 ```powershell
-npm.cmd version 1.1.1 --no-git-tag-version
+npm.cmd version 1.2.0 --no-git-tag-version
 # Edit CHANGELOG.md, then commit and push the changes.
-npm.cmd run release
+npm.cmd run release:stable
 ```
 
 Beta example:
@@ -102,7 +104,7 @@ Beta example:
 ```powershell
 npm.cmd version 1.2.0-beta.1 --no-git-tag-version
 # Edit CHANGELOG.md, then commit and push the changes.
-npm.cmd run release
+npm.cmd run release:beta
 ```
 
 The release script requires a clean Git checkout and verifies that the current commit exists in the public repository. It runs all checks and builds locally. **electron-builder GitHub Publisher** uploads the installer, update metadata and blockmap into a draft release. Only after the required assets exist does the script publish the release, marking beta versions as prereleases. It never publishes incomplete uploads intentionally. A failed upload can leave a draft; inspect it and retry the same unpublished version if appropriate.

@@ -14,7 +14,7 @@ export class LastfmTracker {
   const position=typeof track.position==='number'&&Number.isFinite(track.position)&&track.position>=0?track.position:undefined;
   const rate=Number.isFinite(track.rate)&&track.rate>0?track.rate:1;
   const old=this.current?.track;
-  const changed=!old||old.title!==track.title||old.artist!==track.artist||(old.trackId&&track.trackId&&old.trackId!==track.trackId);
+  const changed=!old||old.title!==track.title||old.artist!==track.artist||(old.source??'music')!==(track.source??'music')||old.sourceId!==track.sourceId||(old.trackId&&track.trackId&&old.trackId!==track.trackId);
   const replay=!changed&&position!==undefined&&this.previous&&position<2&&this.previous.position>5&&position<this.previous.position-5;
   if(changed||replay){this.current={track:{...track},startedAt:track.playing?Math.floor(epoch/1000):0,listened:0,np:false,scrobble:false};this.previous=undefined;}
   const current=this.current!;current.track={...track};let progressed=false;
@@ -32,8 +32,9 @@ export class LastfmTracker {
   if(track.album?.trim())parameters.album=track.album.trim().slice(0,1000);
   const duration=typeof track.duration==='number'&&Number.isFinite(track.duration)&&track.duration>0?track.duration:undefined;
   if(duration)parameters.duration=String(Math.floor(duration));
-  if(settings.nowPlaying&&track.playing&&(progressed||position===undefined)&&!current.np){current.np=true;submissions.push({method:'track.updateNowPlaying',parameters:{...parameters}});}
-  if(settings.scrobbling&&duration&&duration>30&&current.listened>=Math.min(duration/2,240)&&!current.scrobble){current.scrobble=true;submissions.push({method:'track.scrobble',parameters:{...parameters,timestamp:String(current.startedAt)}});}
+  if(settings.nowPlaying&&track.playing&&(progressed||position===undefined||track.source==='radio')&&!current.np){current.np=true;submissions.push({method:'track.updateNowPlaying',parameters:{...parameters}});}
+  const threshold=duration?(duration>30?Math.min(duration/2,240):undefined):track.source==='radio'?240:undefined;
+  if(settings.scrobbling&&threshold!==undefined&&current.listened>=threshold&&!current.scrobble){current.scrobble=true;submissions.push({method:'track.scrobble',parameters:{...parameters,...(track.source==='radio'?{chosenByUser:'0'}:{}),timestamp:String(current.startedAt)}});}
   return submissions;
  }
 }

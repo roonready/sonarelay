@@ -9,3 +9,4 @@ lastfm-api.json
 .env.*
 electron-builder.env
 /project-history.md
+/agents.md

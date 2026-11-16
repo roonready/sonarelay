@@ -5,10 +5,13 @@ const { build, Platform, Arch } = require('electron-builder');
 const { root, repository, releaseVersion } = require('./release-config.cjs');
 const { request, publicRepository } = require('./github.cjs');
 (async () => {
+  if (!process.env.GH_TOKEN && fs.existsSync(path.join(root, '.env'))) process.loadEnvFile(path.join(root, '.env'));
   if (process.platform !== 'win32' || process.arch !== 'x64' || process.env.CI || process.env.GITHUB_ACTIONS) throw new Error('Releases must be built locally on a Windows x64 developer computer.');
   if (!process.env.GH_TOKEN) throw new Error('Set GH_TOKEN in your local shell before releasing.');
   const { owner, repo } = repository();
-  const pkg = require('../package.json'), release = releaseVersion(pkg.version);
+  const channelIndex = process.argv.indexOf('--channel');
+  if (channelIndex >= 0 && !process.argv[channelIndex + 1]) throw new Error('Use --channel beta or --channel stable.');
+  const pkg = require('../package.json'), release = releaseVersion(pkg.version, channelIndex >= 0 ? process.argv[channelIndex + 1] : undefined);
   const changelog = fs.readFileSync(path.join(root, 'CHANGELOG.md'), 'utf8');
   const sections = [...changelog.matchAll(/^## \[([^\]]+)\].*$/gm)];
   const section = sections.findIndex(match => match[1] === pkg.version);

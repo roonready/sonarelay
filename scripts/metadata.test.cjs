@@ -4,15 +4,23 @@ const assert=require('node:assert/strict');
 const vm=require('node:vm');
 const {readMusicMetadata}=require('../src/main/metadata/read-metadata.ts');
 const {MetadataManager}=require('../src/main/metadata/metadata-manager.ts');
-function read({metadata=null,playbackState='none',media=[],scope=null}={}){
+function read({metadata=null,playbackState='none',media=[],scope=null,pageUrl='https://music.yandex.ru/'}={}){
  const document={title:'Music page',querySelectorAll(selector){
   if(selector==='audio,video')return media;
   if(selector==='[aria-label="Плеер"]'&&scope)return [scope];
   return [];
  }};
- return vm.runInNewContext(`(${readMusicMetadata.toString()})(${JSON.stringify(require('../src/shared/locales/ru.json'))})`,{document,navigator:{mediaSession:{metadata,playbackState}},location:{href:'https://music.yandex.ru/'},URL});
+ return vm.runInNewContext(`(${readMusicMetadata.toString()})(${JSON.stringify(require('../src/shared/locales/ru.json'))})`,{document,navigator:{mediaSession:{metadata,playbackState}},location:{href:pageUrl},URL});
 }
 const get=(result,id)=>result.fields.find(field=>field.id===id);
+
+test('diagnostics omit query and fragment; non-range fields are never read',()=>{
+ const slider={tagName:'INPUT',getAttribute:name=>name==='type'?'password':null,get value(){throw new Error('Credential value was read');},get max(){throw new Error('Unexpected field read');}};
+ const scope={getClientRects:()=>[{}],querySelectorAll:()=>[],querySelector:selector=>selector.includes('таймкод')?slider:null};
+ const result=read({scope,pageUrl:'https://music.yandex.ru/album/123?code=private#token=private'});
+ assert.equal(get(result,'page-url').value,'https://music.yandex.ru/album/123');
+ assert.equal(JSON.stringify(result).includes('private'),false);
+});
 test('Media Session values have exact provenance, artwork and unavailable source quality',()=>{
  const result=read({metadata:{title:'Track A',artist:'Artist A',album:'Album A',artwork:[{src:'https://example.com/cover.jpg',sizes:'600x600',type:'image/jpeg'}]},playbackState:'playing'});
  assert.equal(get(result,'title').value,'Track A');assert.equal(get(result,'title').source,'Media Session API');

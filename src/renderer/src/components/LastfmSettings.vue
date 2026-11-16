@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 import { localizeError, supportedLanguages, selectLanguage } from '../i18n';
-const { t, locale } = useI18n();
+const { t, d, locale } = useI18n();
 import { onMounted, onUnmounted, ref } from 'vue';
 import type { LastfmPreferences, LastfmState } from '../../../shared/types';
 import { ipc } from '../services/ipc';
@@ -33,6 +33,7 @@ async function setting(key:keyof LastfmPreferences,event:Event){
    <h2>{{ t('lastfm.brand') }}</h2>
    <p role="status">{{ t(state.busy?'lastfm.loading':state.connected?'lastfm.connected':state.pendingAuthorization?'lastfm.pending':'lastfm.disconnected') }}</p>
    <p v-if="state.username">{{ t('lastfm.username') }} <strong>{{ state.username }}</strong></p>
+   <p v-if="state.connected&&state.activity" role="status">{{ t('lastfm.activity.'+state.activity.kind,{artist:state.activity.artist,title:state.activity.title,time:d(state.activity.at,'time')}) }}</p>
    <p v-if="!state.configured" class="setup-hint">{{ t('lastfm.setup') }}</p>
    <button v-if="!state.connected&&!state.pendingAuthorization" :disabled="state.busy||!state.configured" @click="action('connect')">{{ t('lastfm.connect') }}</button>
    <template v-if="state.pendingAuthorization">

@@ -1,6 +1,17 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { BridgeApi, DiscoveryState, LiveState, MusicMetadataSnapshot, LastfmState, AppUpdateState } from '../shared/types';
 const api: BridgeApi = {
+  musicConsent:()=>ipcRenderer.invoke('music-consent:get'),
+  acceptMusicConsent:version=>ipcRenderer.invoke('music-consent:accept',version),
+  openSourceRepository:()=>ipcRenderer.invoke('source:repository'),
+  radioState:()=>ipcRenderer.invoke('radio:get'),
+  radioToggle:(id,output)=>ipcRenderer.invoke('radio:toggle',id,output),
+  radioOutput:output=>ipcRenderer.invoke('radio:output',output),
+  openMusic:()=>ipcRenderer.invoke('source:music'),
+  onRadioState:callback=>{
+    const listener=(_event:Electron.IpcRendererEvent,state:import('../shared/radio').RadioState)=>callback(state);
+    ipcRenderer.on('radio:state',listener);return ()=>ipcRenderer.removeListener('radio:state',listener);
+  },
   getUpdateState:()=>ipcRenderer.invoke('updates:get'),
   checkUpdates:()=>ipcRenderer.invoke('updates:check'),
   installUpdate:()=>ipcRenderer.invoke('updates:install'),
