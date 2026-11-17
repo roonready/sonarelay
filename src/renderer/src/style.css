@@ -1,6 +1,8 @@
 ﻿:root { font-family: 'Segoe UI', sans-serif; color: #e7eaf0; background: #11151e; color-scheme: dark; }
 * { box-sizing: border-box; }
 body { margin: 0; overflow: hidden; }
+#app { display:flex; width:100%; height:100vh; }
+.panel { flex:0 0 300px; }
 .panel { width: 300px; height: 100vh; display: flex; flex-direction: column; padding: 24px 18px; overflow-y: auto; border-right: 1px solid #303744; }
 .brand { font-size: 11px; letter-spacing: 2px; color: #a9b7ff; }
 h1 { margin: 16px 0 8px; font-size: 25px; }

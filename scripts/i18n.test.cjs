@@ -133,6 +133,23 @@ test('stream details separate original 24-bit audio from lossy output and label 
  }
 });
 
+test('the right-hand track card renders Yandex Music art, track links and localized fallback states',async()=>{
+ const NowPlaying=require('../src/renderer/src/components/NowPlaying.vue').default;
+ const {useRadio}=require('../src/renderer/src/stores/radio.ts'),{useNowPlaying}=require('../src/renderer/src/stores/now-playing.ts');
+ for(const locale of ['en','ru'])for(const status of ['found','missing','error']){
+  selectLanguage(locale);const messages=locale==='en'?en:ru,pinia=createPinia(),radio=useRadio(pinia),catalog=useNowPlaying(pinia);
+  radio.state={...radio.state,mode:'radio',status:'playing',stationId:'nashe-radio',metadata:{...radio.state.metadata,artist:'Queen',title:'Bohemian Rhapsody'}};
+  catalog.load=async()=>{};catalog.status=status;
+  catalog.track=status==='found'?{id:'1',albumId:'11',title:'Bohemian Rhapsody',artist:'Queen',album:'The Platinum Collection',cover:'https://avatars.yandex.net/cover.jpg',artistPicture:'https://avatars.yandex.net/artist.jpg'}:null;
+  const html=await renderToString(createSSRApp(NowPlaying).use(pinia).use(i18n));
+  assert.ok(html.includes('Queen'));assert.ok(html.includes('Bohemian Rhapsody'));
+  if(status==='found'){assert.ok(html.includes('The Platinum Collection'));assert.ok(html.includes('cover.jpg'));assert.ok(html.includes('artist.jpg'));assert.ok(html.includes(messages['nowPlaying.credit']));assert.ok(html.includes('href="https://music.yandex.ru/album/11/track/1"'));assert.ok(html.includes(messages['nowPlaying.openCatalog']));}
+  if(status==='missing'){assert.ok(html.includes(messages['nowPlaying.unknownAlbum']));assert.ok(!html.includes('cover.jpg'));}
+  if(status==='error'){assert.ok(html.includes(messages['catalog.unavailable']));assert.ok(html.includes(messages['nowPlaying.retry']));}
+  if(status!=='found')assert.ok(!html.includes('now-catalog-link'));
+ }
+});
+
 test('Vue templates and scripts contain no hardcoded user-facing copy',()=>{
  const dirs=['components','views'];
  for(const dir of dirs)for(const name of fs.readdirSync(path.join(__dirname,'../src/renderer/src',dir))){

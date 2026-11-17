@@ -12,6 +12,8 @@ import { MusicConsentStore } from '../runtime/music-consent';
 import { SOURCE_REPOSITORY_URL } from '../../shared/music-consent';
 import { receiverVolume } from '../receivers/volume';
 import { WindowsVolume } from '../runtime/windows-volume';
+import { MusicCatalog } from '../metadata/music-catalog';
+import { musicTrackUrl } from '../../shared/music-catalog';
 export function registerHandlers(window: BrowserWindow, discovery: Discovery, sources?: {openMusic():Promise<void>;closeMusic():void;onRadioPlayback?(playback:MusicPlaybackSnapshot|undefined):void}) {
   // BrowserWindow.webContents must not be read after the native window is destroyed.
   const contents=window.webContents;
@@ -28,6 +30,11 @@ export function registerHandlers(window: BrowserWindow, discovery: Discovery, so
     });
   };
   const player = new Player();
+  const catalog=new MusicCatalog();
+  handle('catalog:search',(_event,artist:unknown,title:unknown)=>catalog.search(artist,title));
+  handle('catalog:open',async(_event,id:unknown,albumId:unknown)=>{
+    await shell.openExternal(musicTrackUrl(id,albumId));
+  });
   const windowsVolume=new WindowsVolume(app.isPackaged?path.join(process.resourcesPath,'native-audio'):path.join(app.getAppPath(),'assets/native'));
   handle('windows:volume',(_event,value:unknown)=>{
     if(value!==undefined&&(typeof value!=='number'||!Number.isFinite(value)||value<0||value>100))throw new Error('volume.invalid');
@@ -148,6 +155,7 @@ export function registerHandlers(window: BrowserWindow, discovery: Discovery, so
   return () => {
     if(cleanupPromise)return cleanupPromise;
     disposed=true;
+    catalog.dispose();ipcMain.removeHandler('catalog:search');ipcMain.removeHandler('catalog:open');
     live.off('state',sendLive);
     radio.off('state',sendRadio);radio.off('state',sendLive);
     releasePowerBlocker();

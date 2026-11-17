@@ -10,6 +10,7 @@ import LastfmSettings from '../components/LastfmSettings.vue';
 import AppUpdates from '../components/AppUpdates.vue';
 import RadioPlayer from '../components/RadioPlayer.vue';
 import { useRadio } from '../stores/radio';
+import NowPlaying from '../components/NowPlaying.vue';
 const radio=useRadio();
 const store = useDevices();
 let cleanup: (() => void) | undefined;
@@ -38,4 +39,5 @@ function changeInterface(event: Event) { void store.scan((event.target as HTMLSe
     <LastfmSettings />
     <AppUpdates />
   </aside>
+  <NowPlaying />
 </template>

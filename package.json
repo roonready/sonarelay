@@ -1,6 +1,6 @@
 {
   "name": "sonarelay",
-  "version": "1.3.0",
+  "version": "1.4.0-beta.1",
   "description": "SonaRelay - DLNA playback and Yandex Music browser",
   "private": true,
   "main": "out/main/index.js",
@@ -9,7 +9,7 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "check": "vue-tsc --noEmit",
-    "test": "node --test scripts/discovery.test.cjs scripts/playback.test.cjs scripts/live.test.cjs scripts/shutdown.test.cjs scripts/selection.test.cjs scripts/metadata.test.cjs scripts/bluos.test.cjs scripts/cast.test.cjs scripts/airplay2.test.cjs scripts/slimproto.test.cjs scripts/readiness.test.cjs scripts/receiver-order.test.cjs scripts/discovery-ui.test.cjs scripts/lastfm.test.cjs scripts/i18n.test.cjs scripts/updates.test.cjs scripts/radio.test.cjs scripts/profile.test.cjs scripts/radio-lastfm.test.cjs scripts/music-consent.test.cjs scripts/receiver-volume.test.cjs scripts/windows-volume.test.cjs scripts/radio-stream-info.test.cjs",
+    "test": "node --test scripts/discovery.test.cjs scripts/playback.test.cjs scripts/live.test.cjs scripts/shutdown.test.cjs scripts/selection.test.cjs scripts/metadata.test.cjs scripts/bluos.test.cjs scripts/cast.test.cjs scripts/airplay2.test.cjs scripts/slimproto.test.cjs scripts/readiness.test.cjs scripts/receiver-order.test.cjs scripts/discovery-ui.test.cjs scripts/lastfm.test.cjs scripts/i18n.test.cjs scripts/updates.test.cjs scripts/radio.test.cjs scripts/profile.test.cjs scripts/radio-lastfm.test.cjs scripts/music-consent.test.cjs scripts/receiver-volume.test.cjs scripts/windows-volume.test.cjs scripts/radio-stream-info.test.cjs scripts/music-catalog.test.cjs",
     "discover": "node scripts/discover.cjs",
     "test:capture": "node scripts/run-capture-smoke.cjs",
     "test:live": "node scripts/test-live.cjs",

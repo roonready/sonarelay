@@ -46,6 +46,8 @@ Selecting a supported output sets its volume to **10** before playback is allowe
 
 Expand **Stream details** to see the station's source format and the format sent to your output. Codec, sample rate, channels, bit depth and known bitrate appear separately. Unavailable values are shown as unknown; station-reported bitrate is labelled and may differ from the actual variable stream bitrate.
 
+The right-hand panel shows the current artist, track, album and images. SonaRelay searches the Yandex Music catalog using the artist and title provided by the station. Album details, artwork and available artist photos come from the matching catalog entry; if no match is found, the station's metadata remains visible. The catalog lookup does not require signing in, and radio playback continues if it is unavailable. **Open in Yandex Music** opens the matched track in your external browser.
+
 Selecting another receiver automatically ends the previous stream. A device may appear more than once if it supports several connection methods; check the protocol beside its name.
 
 ### Interface language
@@ -182,6 +184,8 @@ SonaRelay — приложение для Windows, с которым можно 
 При выборе поддерживаемого выхода громкость устанавливается на **10** до разрешения воспроизведения. Затем её можно изменить ползунком: запуск станции сохранит выбранный вами уровень. Обновление списка устройств громкость не сбрасывает.
 
 В блоке **«Характеристики потока»** отдельно показаны исходный формат радиостанции и формат передачи на выбранный выход: кодек, частота дискретизации, каналы, разрядность и известный битрейт. Недоступные значения отмечены как неизвестные. Заявленный станцией битрейт помечен отдельно и может отличаться от фактического битрейта переменного потока.
+
+Справа отображаются текущие исполнитель, композиция, альбом и изображения. SonaRelay ищет сведения в каталоге Яндекс Музыки по исполнителю и названию, переданным радиостанцией. Альбом, обложка и доступное фото исполнителя берутся из найденной записи; если совпадения нет, остаются сведения радиостанции. Для поиска в каталоге вход в аккаунт не требуется. Недоступность поиска не прерывает радио. Ссылка **«Открыть в Яндекс Музыке»** открывает найденный трек во внешнем браузере.
 
 При выборе другого приёмника приложение автоматически завершает предыдущую трансляцию. Одно устройство может отображаться несколько раз, если оно поддерживает разные способы подключения: ориентируйтесь на пометку протокола рядом с названием.
 

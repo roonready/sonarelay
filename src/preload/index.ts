@@ -1,6 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { BridgeApi, DiscoveryState, LiveState, MusicMetadataSnapshot, LastfmState, AppUpdateState } from '../shared/types';
 const api: BridgeApi = {
+  catalogSearch:(artist,title)=>ipcRenderer.invoke('catalog:search',artist,title),
+  catalogOpen:(id,albumId)=>ipcRenderer.invoke('catalog:open',id,albumId),
   windowsVolume:value=>ipcRenderer.invoke('windows:volume',value),
   receiverVolume:(id,value)=>ipcRenderer.invoke('receiver:volume',id,value),
   musicConsent:()=>ipcRenderer.invoke('music-consent:get'),

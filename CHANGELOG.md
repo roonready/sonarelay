@@ -2,6 +2,14 @@
 
 Versions follow Semantic Versioning. Stable releases use `x.y.z`; beta releases use `x.y.z-beta.N`.
 
+## [1.4.0-beta.1] - 2026-11-17
+
+### Added
+
+- A right-hand now-playing card with artist, track, album artwork and available artist photo from the Yandex Music catalog, based on the station's artist/title metadata.
+- An Open in Yandex Music link for the matched track and album, opening in the default external browser.
+- Cached public catalog search with artist/title/version matching, cancellation of obsolete requests and fallback states for missing metadata, artwork or catalog matches. Image URI templates are expanded to HTTPS images with explicit sizes.
+
 ## [1.3.0] - 2026-11-17
 
 ### Added

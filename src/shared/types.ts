@@ -13,6 +13,8 @@ export interface DiscoveryState {
 }
 export interface WindowsVolumeState {volume:number;muted:boolean}
 export interface BridgeApi {
+  catalogSearch(artist:string,title:string):Promise<import('./music-catalog').CatalogTrack|null>;
+  catalogOpen(trackId:string,albumId?:string|null):Promise<void>;
   windowsVolume(value?:number):Promise<WindowsVolumeState>;
   receiverVolume(deviceId:string,value?:number):Promise<{deviceId:string;volume:number}>;
   musicConsent(): Promise<import('./music-consent').MusicConsentState>;
