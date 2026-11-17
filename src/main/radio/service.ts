@@ -27,7 +27,7 @@ export class RadioService extends EventEmitter {
   private trackSerial=0;
   private liveListener = () => {
     if (!this.ownsLive || !this.desired) return;
-    if (this.live.state.error) { void this.fail('radio.connectionError'); return; }
+    if (this.live.state.error) { void this.fail(this.live.state.error); return; }
     if (this.live.state.playbackReady) this.playing();
   };
   constructor(private live: LiveSession, private resolveOutput: (id: string) => RendererDevice | undefined,
@@ -60,13 +60,13 @@ export class RadioService extends EventEmitter {
   route(outputId: string) { return this.desired ? this.schedule({ ...this.desired, outputId }) : Promise.resolve(this.state); }
   stop() { return this.schedule(undefined); }
   async music() { await this.stop(); this.publish({ mode: 'music' }); return this.state; }
-  private fail(error: string) { return this.schedule(undefined, error.startsWith('radio.') ? error : 'radio.connectionError'); }
+  private fail(error: string) { return this.schedule(undefined, error.startsWith('radio.')||error.startsWith('volume.') ? error : 'radio.connectionError'); }
   private schedule(desired?: { stationId: string; outputId: string }, error = ''): Promise<RadioState> {
     if (this.disposed) return Promise.resolve(this.state);
     const revision = ++this.revision; this.desired = desired;
     // Interrupt in-flight network/decoder startup before waiting for its queued operation.
     void this.source?.stop(); void this.output?.stop(); clearTimeout(this.readiness);
-    this.publish({ mode: 'radio', status: desired ? 'connecting' : error ? 'error' : 'stopped', error, ...(desired ? { stationId: desired.stationId, outputId: desired.outputId, metadata: emptyRadioState().metadata } : {}) });
+    this.publish({ mode: 'radio', status: desired ? 'connecting' : error ? 'error' : 'stopped', error, ...(desired ? { stationId: desired.stationId, outputId: desired.outputId, metadata: emptyRadioState().metadata,stream:null } : {}) });
     const task = this.queue.catch(() => {}).then(async () => {
       await this.cleanup();
       if (revision !== this.revision || !desired || this.disposed) return this.state;
@@ -74,6 +74,7 @@ export class RadioService extends EventEmitter {
       try {
         await this.prepare(); if (revision !== this.revision) return this.state;
         const source = this.source = this.sourceFactory(station.streamUrl);
+        source.on('stream-info',stream=>{if(revision===this.revision)this.publish({stream});});
         this.pcmBytes=0;this.observedPcm=0;this.observedAt=this.clock.now();
         source.onAudioData(pcm=>{this.pcmBytes+=pcm.length;this.lastPcmAt=this.clock.now();});
         this.playbackTimer=setInterval(()=>this.publishPlayback(),1000);
@@ -98,7 +99,7 @@ export class RadioService extends EventEmitter {
       } catch (error) {
         if (revision === this.revision) {
           this.desired = undefined; await this.cleanup();
-          const key = error instanceof Error && error.message.startsWith('radio.') ? error.message : 'radio.connectionError';
+          const key = error instanceof Error && (error.message.startsWith('radio.')||error.message.startsWith('volume.')) ? error.message : 'radio.connectionError';
           this.publish({ status: 'error', error: key });
         }
       }

@@ -2,7 +2,7 @@
 import { useI18n } from 'vue-i18n';
 import { localizeError, localizeMessage } from '../i18n';
 const { t, n } = useI18n();
-import { ref, watch, computed, onUnmounted } from 'vue';
+import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import type { PlaybackState, PlaybackCommand, LiveState } from '../../../shared/types';
 import { useDevices } from '../stores/devices';
 import { ipc } from '../services/ipc';
@@ -11,6 +11,8 @@ import { SelectionRouter } from '../services/selection-router';
 import { LOCAL_OUTPUT_ID } from '../services/output';
 import PlaybackWait from './PlaybackWait.vue';
 import { useRadio } from '../stores/radio';
+import { useReceiverVolume } from '../stores/receiver-volume';
+const receiverVolume=useReceiverVolume();
 const radio=useRadio();
 const devices=useDevices();
 const state=ref<PlaybackState>({deviceId:'',status:'lastfm.disconnected',error:'',busy:false,volume:null,httpRequests:0});
@@ -21,10 +23,10 @@ const selected=computed(()=>devices.state.devices.find(d=>d.id===devices.selecte
 const isLocal=computed(()=>devices.selectedId===LOCAL_OUTPUT_ID);
 const isLive=computed(()=>live.value?.active===true && live.value.deviceId===devices.selectedId);
 const active=computed(()=>state.value.deviceId===devices.selectedId || isLive.value);
-const volumeValue=computed(()=>isLive.value?live.value?.volume:state.value.volume);
+const volumeValue=computed(()=>receiverVolume.deviceId===devices.selectedId?receiverVolume.value:null);
 const router=new SelectionRouter<MediaStream>(
  ()=>requestMusicStream(),
- (id,input,signal)=>startLiveCapture(id,error=>{if(!disposed&&devices.selectedId===id)state.value.error=error;},signal,input),
+ async(id,input,signal)=>{await receiverVolume.ready(id);return startLiveCapture(id,error=>{if(!disposed&&devices.selectedId===id)state.value.error=error;},signal,input);},
  stream=>stream.getTracks().forEach(track=>track.stop()),
 );
 function supported(action:string){return selected.value?.capabilities?.includes(action)||selected.value?.services.some(s=>s.actions.includes(action));}
@@ -32,6 +34,7 @@ const unsubscribe=ipc.onLiveState(value=>{
  if(disposed)return;
  if(value.deviceId===devices.selectedId || value.sessionId===live.value?.sessionId)live.value=value;
  if(value.deviceId===devices.selectedId){
+  receiverVolume.observe(value.deviceId,value.volume);
   if(value.active&&value.playbackReady){waitingSince.value=null;message.value='playback.ready';}
   if(value.error)waitingSince.value=null;
  }
@@ -40,8 +43,11 @@ async function routeSelection(id:string){
  const current=++revision;
  if(radio.state.mode!=='music'){
   waitingSince.value=null;message.value='';
-  await router.stop();
-  if(radio.active)await ipc.radioOutput(id===LOCAL_OUTPUT_ID?'':id).catch(()=>{});
+  try{
+   await router.stop();await receiverVolume.ready(id);
+   if(current!==revision||disposed)return;
+   if(radio.active)await ipc.radioOutput(id===LOCAL_OUTPUT_ID?'':id);
+  }catch(error){if(current===revision&&!disposed)state.value.error=String(error);}
   return;
  }
  waitingSince.value=id&&id!==LOCAL_OUTPUT_ID?Date.now():null;
@@ -73,25 +79,43 @@ watch([()=>devices.selectedId,()=>radio.state.mode],([id,mode],previous)=>{
  if(mode==='music'||id!==previous?.[0])void routeSelection(id);
  else void router.stop();
 },{flush:'sync',immediate:true});
-onUnmounted(()=>{disposed=true;revision++;unsubscribe();void router.stop().catch(console.error);});
-function volume(event:Event){void command('volume',Number((event.target as HTMLInputElement).value));}
+let volumeRefresh:ReturnType<typeof setInterval>|undefined;
+onMounted(()=>{volumeRefresh=setInterval(()=>{if(isLocal.value&&!receiverVolume.busy&&!disposed)void receiverVolume.request(LOCAL_OUTPUT_ID);},2500);});
+onUnmounted(()=>{disposed=true;revision++;clearInterval(volumeRefresh);receiverVolume.reset();unsubscribe();void router.stop().catch(console.error);});
+async function loadVolume(){
+ const id=devices.selectedId;
+ if(!receiverVolume.initialized){await receiverVolume.select(id,!!(isLocal.value||supported('SetVolume'))).catch(()=>{});return;}
+ if(id&&(isLocal.value||supported('SetVolume')))await receiverVolume.request(id);
+}
+watch([()=>devices.selectedId,()=>selected.value?.id],()=>{
+ const id=devices.selectedId;
+ // Discovery refreshes are not a new user selection; never reset a manual level.
+ if(receiverVolume.deviceId===id&&(receiverVolume.initialized||receiverVolume.busy||receiverVolume.error))return;
+ if(!isLocal.value&&!selected.value){if(receiverVolume.deviceId!==id)receiverVolume.reset(id);return;}
+ void receiverVolume.select(id,!!(isLocal.value||supported('SetVolume'))).catch(()=>{});
+},{flush:'sync',immediate:true});
+function volume(event:Event){void receiverVolume.request(devices.selectedId,Number((event.target as HTMLInputElement).value));}
 </script>
 <template>
- <section v-if="radio.state.mode==='music'&&(isLocal||selected)" class="controls" :aria-label="t('playback.controls')">
+ <section v-if="isLocal||selected" class="controls" :aria-label="t('playback.controls')">
   <h2>{{ isLocal?t('devices.local'):selected?.name }}</h2>
-  <template v-if="isLocal"><p>{{ t('playback.localHelp') }}</p></template>
+  <template v-if="isLocal"><p>{{ t('volume.windowsScope') }}</p></template>
   <template v-else>
+   <template v-if="radio.state.mode==='music'">
    <PlaybackWait v-if="waitingSince!==null&&!state.error&&!live?.error" :started-at="waitingSince" />
    <p v-else-if="busy" role="status">{{ t('playback.connecting') }}</p>
    <p v-else>{{ t('playback.auto') }}</p>
    <p v-if="isLive">{{ t('playback.format', { encoding: (live?.encoding||'flac').toUpperCase(), rate: n(live?.sampleRate??0) }) }}<br>{{ localizeMessage(live?.status) }}<br><span v-if="live?.encoding==='alac'">{{ t('playback.alac', { rate: n(44100) }) }}<br>{{ t('playback.rtp', { packets: n(live?.packets??0), exchanges: n(live?.timingExchanges??0) }) }}<br>{{ t('playback.underruns', { count: n(live?.underruns??0) }) }}</span><br v-if="live?.encoding==='mp3'"><span v-if="live?.encoding==='mp3'">{{ t('playback.mp3') }}</span></p>
+   </template>
    <p v-if="selected?.protocol==='slimproto'">{{ t('playback.wiimVolume') }}</p>
-   <label v-if="active && volumeValue!=null && supported('SetVolume')">{{ t('playback.volume', { value: n(volumeValue??0) }) }}
-    <input type="range" min="0" max="100" :value="volumeValue" :disabled="busy" @change="volume">
-   </label>
-   <p v-if="active&&!isLive">{{ localizeMessage(state.status) }}</p>
+   <p v-if="radio.state.mode==='music'&&active&&!isLive">{{ localizeMessage(state.status) }}</p>
   </template>
-  <p v-if="message" role="status">{{ t(message) }}</p>
+  <label v-if="isLocal||supported('SetVolume')">{{ volumeValue===null?t(isLocal?(receiverVolume.busy?'volume.windowsLoading':'volume.windowsUnknown'):(receiverVolume.busy?'volume.loading':'volume.unknown')):t(isLocal?'volume.windowsLabel':'playback.volume', { value: n(volumeValue) }) }}
+   <input type="range" min="0" max="100" :value="volumeValue??0" :aria-valuetext="volumeValue===null?t(isLocal?'volume.windowsUnknown':'volume.unknown'):n(volumeValue)" :disabled="busy||receiverVolume.busy||volumeValue===null" @change="volume">
+  </label>
+  <p v-if="isLocal&&receiverVolume.muted">{{ t('volume.windowsMuted') }}</p>
+  <p v-if="receiverVolume.error||(!receiverVolume.initialized&&!receiverVolume.busy&&(isLocal||supported('SetVolume')))" class="error" role="alert">{{ localizeError(receiverVolume.error||'volume.selectionFailed') }} <button type="button" :disabled="receiverVolume.busy" @click="loadVolume">{{ t('volume.retry') }}</button></p>
+  <p v-if="radio.state.mode==='music'&&message" role="status">{{ t(message) }}</p>
   <p v-if="state.error||(!isLocal&&live?.error)" class="error" role="alert">{{ localizeError(state.error||live?.error) }}</p>
  </section>
 </template>

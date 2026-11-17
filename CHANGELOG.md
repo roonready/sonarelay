@@ -2,6 +2,22 @@
 
 Versions follow Semantic Versioning. Stable releases use `x.y.z`; beta releases use `x.y.z-beta.N`.
 
+## [1.3.0] - 2026-11-17
+
+### Added
+
+- A Windows master-volume slider for local output, available before playback and refreshed when the system volume changes. Existing mute state is preserved.
+- Collapsible radio stream details: source codec, sample rate, channels, bit depth and known bitrate, shown separately from the output encoding. Station-declared bitrate is labelled separately from actual stream data.
+
+### Fixed
+
+- Restored receiver volume controls during radio playback; the output panel is no longer limited to Yandex Music mode.
+- Receiver volume can be read and adjusted before starting a stream. Radio start waits while a volume request is pending; unknown values are shown explicitly.
+
+### Changed
+
+- Selecting a supported output sets its volume to 10 before playback is allowed, including the Windows master volume for local output. Starting a stream preserves subsequent manual volume adjustments; discovery refreshes do not reset them.
+
 ## [1.2.1] - 2026-11-17
 
 ### Changed

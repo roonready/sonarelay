@@ -11,7 +11,10 @@ export interface DiscoveryState {
   interfaces: LanInterface[]; selectedAddress: string; devices: RendererDevice[];
   scanning: boolean; error: string; lastScan: number | null;
 }
+export interface WindowsVolumeState {volume:number;muted:boolean}
 export interface BridgeApi {
+  windowsVolume(value?:number):Promise<WindowsVolumeState>;
+  receiverVolume(deviceId:string,value?:number):Promise<{deviceId:string;volume:number}>;
   musicConsent(): Promise<import('./music-consent').MusicConsentState>;
   acceptMusicConsent(version: number): Promise<void>;
   openSourceRepository(): Promise<void>;

@@ -35,3 +35,33 @@ test('Cast PLAYING is insufficient until its media clock confirms progress',asyn
  await live.checkPlayback();assert.equal(live.state.playbackReady,false);
  live.controller.transport=async()=>({CurrentTransportState:'PLAYING',PlaybackReady:true});await live.checkPlayback();assert.equal(live.state.playbackReady,true);
 });
+
+test('starting a stream reads but never resets the volume chosen before playback',async()=>{
+ for(const airplay of [false,true]){
+  const live=session(),calls=[];live.connected=false;live.volumeSupported=true;live.engine={bytes:4};
+  const output={volume:async value=>{assert.equal(value,undefined);calls.push('get-volume');return {CurrentVolume:4};},play:async()=>{calls.push('play');},setUri:async()=>{calls.push('uri');}};
+  if(airplay)live.airplay=output;else live.controller=output;
+  await live.connect('test');
+  assert.deepEqual(calls,airplay?['get-volume','play']:['get-volume','uri','play']);
+  assert.equal(live.state.volume,4);
+  await live.connect('test');assert.equal(calls.filter(c=>c==='get-volume').length,1);
+ }
+});
+
+test('an unreadable volume cannot start receiver playback',async()=>{
+ for(const mode of ['read-error','unknown']){
+  const live=session(),calls=[];live.connected=false;live.volumeSupported=true;live.engine={bytes:4,stop:async()=>{}};
+  live.controller={
+   async volume(){if(mode==='read-error')throw Error('Receiver unavailable');return {CurrentVolume:''};},
+   async setUri(){calls.push('uri');},async play(){calls.push('play');},async stop(){calls.push('stop');}
+  };
+  await assert.rejects(live.connect('test'),/volume.unavailable/);
+  assert.equal(calls.includes('uri'),false);assert.equal(calls.includes('play'),false);assert.equal(live.state.active,false);
+ }
+});
+
+test('receivers without volume control keep their external volume handling',async()=>{
+ const live=session();live.connected=false;live.engine={bytes:4};let played=false;
+ live.controller={setUri:async()=>{},play:async()=>{played=true;},volume:async()=>{throw Error('Must not query unsupported volume');}};
+ await live.connect('test');assert.equal(played,true);assert.equal(live.state.volume,null);
+});

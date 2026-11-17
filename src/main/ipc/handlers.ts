@@ -10,6 +10,8 @@ import { RadioService } from '../radio/service';
 import { NativeOutput } from '../radio/native-output';
 import { MusicConsentStore } from '../runtime/music-consent';
 import { SOURCE_REPOSITORY_URL } from '../../shared/music-consent';
+import { receiverVolume } from '../receivers/volume';
+import { WindowsVolume } from '../runtime/windows-volume';
 export function registerHandlers(window: BrowserWindow, discovery: Discovery, sources?: {openMusic():Promise<void>;closeMusic():void;onRadioPlayback?(playback:MusicPlaybackSnapshot|undefined):void}) {
   // BrowserWindow.webContents must not be read after the native window is destroyed.
   const contents=window.webContents;
@@ -26,11 +28,25 @@ export function registerHandlers(window: BrowserWindow, discovery: Discovery, so
     });
   };
   const player = new Player();
+  const windowsVolume=new WindowsVolume(app.isPackaged?path.join(process.resourcesPath,'native-audio'):path.join(app.getAppPath(),'assets/native'));
+  handle('windows:volume',(_event,value:unknown)=>{
+    if(value!==undefined&&(typeof value!=='number'||!Number.isFinite(value)||value<0||value>100))throw new Error('volume.invalid');
+    return windowsVolume.request(value as number|undefined);
+  });
   const musicConsent=new MusicConsentStore(app.getPath('userData'),app.getPath('sessionData'));
   handle('music-consent:get',()=>musicConsent.state());
   handle('music-consent:accept',(_event,version:unknown)=>musicConsent.accept(version));
   handle('source:repository',()=>shell.openExternal(SOURCE_REPOSITORY_URL));
   const live = new LiveSession(() => discovery.state.selectedAddress);
+  handle('receiver:volume',async(_event,id:unknown,value:unknown)=>{
+    if(typeof id!=='string'||(value!==undefined&&(typeof value!=='number'||!Number.isFinite(value)||value<0||value>100)))throw new Error('volume.invalid');
+    const device=discovery.state.devices.find(device=>device.id===id);
+    if(!device)throw new Error(runtimeMessage('runtime096'));
+    const volume=live.state.active&&live.state.deviceId===id
+      ?await live.volume(value as number|undefined)
+      :await receiverVolume(device,discovery.state.devices,discovery.state.selectedAddress,value as number|undefined);
+    return {deviceId:id,volume};
+  });
   let musicBegin: Promise<unknown> | undefined;
   const radio = new RadioService(live,id=>discovery.state.devices.find(device=>device.id===id),()=>discovery.state.selectedAddress,
     async()=>{sources?.closeMusic();await musicBegin?.catch(()=>{});await player.dispose();await live.stop();},
@@ -138,7 +154,7 @@ export function registerHandlers(window: BrowserWindow, discovery: Discovery, so
     contents.removeListener('render-process-gone',rendererGone);
     contents.removeListener('did-start-loading',rendererGone);
     for(const channel of ['live:begin','live:pcm','live:connect','live:stop'])ipcMain.removeHandler(channel);
-    for(const channel of ['radio:get','radio:toggle','radio:output','source:music'])ipcMain.removeHandler(channel);
+    for(const channel of ['radio:get','radio:toggle','radio:output','source:music','receiver:volume','windows:volume'])ipcMain.removeHandler(channel);
     for(const channel of ['music-consent:get','music-consent:accept','source:repository'])ipcMain.removeHandler(channel);
     ipcMain.removeListener('capture:pcm', onPcm);
     ipcMain.removeHandler('capture:begin'); ipcMain.removeHandler('capture:finish');
@@ -146,10 +162,11 @@ export function registerHandlers(window: BrowserWindow, discovery: Discovery, so
     discovery.off('state', send);
     ipcMain.removeHandler('discovery:state'); ipcMain.removeHandler('discovery:scan');
     const radioShutdown=radio.dispose();
+    const windowsVolumeShutdown=windowsVolume.dispose();
     cleanupPromise=(async()=>{
       await Promise.allSettled([...pending]);
       try{recorder.dispose();}catch(error){console.error('WAV finalization:',error);}
-      const results=await Promise.allSettled([radioShutdown,live.stop(),player.dispose()]);
+      const results=await Promise.allSettled([radioShutdown,windowsVolumeShutdown,live.stop(),player.dispose()]);
       for(const result of results)if(result.status==='rejected')console.error('Playback shutdown:',result.reason);
     })();
     return cleanupPromise;

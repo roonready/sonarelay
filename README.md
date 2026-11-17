@@ -40,7 +40,11 @@ For local builds and publishing, see [RELEASE.md](RELEASE.md). Version history i
 
 For radio, select **This computer (Windows)** or a network receiver, then press **Наше Радио** or **Radio Calico**. Press the same station again to stop. Choosing another station stops the previous one. The panel shows connecting, playing, stopped, or a connection error. Available station and track details appear automatically; metadata is optional.
 
-Radio uses the Windows audio output for local playback; adjust its volume in Windows. Radio tracks with an artist and title can be sent to Last.fm after connecting your account. MusicBrainz is not used.
+For local playback, use the **Windows volume** slider under **This computer**. It controls the overall Windows output volume for all applications and works before playback starts. The slider reflects system volume changes and preserves the Windows mute setting. Radio tracks with an artist and title can be sent to Last.fm after connecting your account. MusicBrainz is not used.
+
+Selecting a supported output sets its volume to **10** before playback is allowed. You can then adjust the slider; starting a station keeps the level you chose. Refreshing the device list does not reset it.
+
+Expand **Stream details** to see the station's source format and the format sent to your output. Codec, sample rate, channels, bit depth and known bitrate appear separately. Unavailable values are shown as unknown; station-reported bitrate is labelled and may differ from the actual variable stream bitrate.
 
 Selecting another receiver automatically ends the previous stream. A device may appear more than once if it supports several connection methods; check the protocol beside its name.
 
@@ -173,7 +177,11 @@ SonaRelay — приложение для Windows, с которым можно 
 
 Для радио выберите **«Этот компьютер (Windows)»** или сетевой приёмник, затем нажмите **«Наше Радио»** либо **Radio Calico**. Повторное нажатие той же кнопки останавливает поток. Выбор другой станции завершает предыдущую трансляцию. Панель показывает подключение, воспроизведение, остановку или ошибку. Сведения о станции и композиции появляются при наличии метаданных; их отсутствие не мешает звуку.
 
-При прослушивании радио на компьютере громкость регулируется в Windows. Композиции радио с известными исполнителем и названием можно отправлять в Last.fm после подключения аккаунта. MusicBrainz не используется.
+При прослушивании на компьютере используйте ползунок **«Громкость Windows»** в блоке **«Этот компьютер»**. Он меняет общую громкость выхода Windows для всех приложений и работает до запуска воспроизведения. Ползунок отражает изменения системной громкости и сохраняет состояние отключённого звука Windows. Композиции радио с известными исполнителем и названием можно отправлять в Last.fm после подключения аккаунта. MusicBrainz не используется.
+
+При выборе поддерживаемого выхода громкость устанавливается на **10** до разрешения воспроизведения. Затем её можно изменить ползунком: запуск станции сохранит выбранный вами уровень. Обновление списка устройств громкость не сбрасывает.
+
+В блоке **«Характеристики потока»** отдельно показаны исходный формат радиостанции и формат передачи на выбранный выход: кодек, частота дискретизации, каналы, разрядность и известный битрейт. Недоступные значения отмечены как неизвестные. Заявленный станцией битрейт помечен отдельно и может отличаться от фактического битрейта переменного потока.
 
 При выборе другого приёмника приложение автоматически завершает предыдущую трансляцию. Одно устройство может отображаться несколько раз, если оно поддерживает разные способы подключения: ориентируйтесь на пометку протокола рядом с названием.
 

@@ -49,9 +49,12 @@ test('FFmpeg radio source feeds the existing AudioEngine, stops sockets and deco
   const timer=setInterval(()=>response.write(pcm),20);response.on('close',()=>clearInterval(timer));
  });
  const source=new RadioSource(f.url,5000),engine=new AudioEngine(source,{sampleRate:48000,channels:2,bitDepth:16});
- const failure=new Promise(resolve=>source.once('failure',resolve));
+ const failure=new Promise(resolve=>source.once('failure',resolve));let streamInfo;
+ source.on('stream-info',info=>{if(info.codec)streamInfo=info;});
  try{
   await engine.start();assert.ok(engine.bytes>0);const decoder=source.child;
+  for(let i=0;i<30&&!streamInfo;i++)await new Promise(resolve=>setTimeout(resolve,10));
+  assert.equal(streamInfo.codec,'pcm_s16le');assert.equal(streamInfo.sampleRate,48000);assert.equal(streamInfo.bitDepth,16);
   clientResponse.destroy();await failure;await engine.stop();
   assert.ok(decoder.exitCode!==null||decoder.signalCode!==null);assert.equal(source.child,undefined);assert.equal(engine.listenerCount('pcm'),0);
  }finally{await engine.stop();await f.close();}
@@ -90,11 +93,11 @@ test('one radio source at a time; stop cancels startup, station switch cleans ol
 
 test('external radio PCM uses the existing LiveSession and FLAC server, with station title and normal cleanup',async()=>{
  const Module=require('node:module'),original=Module._load;let streamRequest,url,title;
- const chunks=[];
+ const chunks=[],volumeCalls=[];
  const controller={
   async setUri(value,label){url=value;title=label;},
   async play(){streamRequest=http.get(url,response=>{response.on('data',chunk=>chunks.push(chunk));response.on('error',()=>{});});streamRequest.on('error',()=>{});},
-  async stop(){streamRequest?.destroy();},async volume(){return {CurrentVolume:10};},async transport(){return {CurrentTransportState:'PLAYING'};}
+  async stop(){streamRequest?.destroy();},async volume(value){volumeCalls.push(value);return {CurrentVolume:10};},async transport(){return {CurrentTransportState:'PLAYING'};}
  };
  let LiveSession;
  Module._load=function(request,parent,isMain){
@@ -108,8 +111,9 @@ test('external radio PCM uses the existing LiveSession and FLAC server, with sta
  source.stop=async()=>{clearInterval(interval);source.stopped=true;};
  const live=new LiveSession(()=> '127.0.0.1');
  try{
-  await live.begin({id:'test-radio-receiver',ip:'127.0.0.1',protocol:'dlna'},'127.0.0.1',48000,{source,title:'Radio Calico'});
+  await live.begin({id:'test-radio-receiver',ip:'127.0.0.1',protocol:'dlna',capabilities:['GetVolume','SetVolume'],services:[]},'127.0.0.1',48000,{source,title:'Radio Calico'});
   await live.connect(live.state.sessionId);
+  assert.deepEqual(volumeCalls,[undefined]);assert.equal(live.state.volume,10);
   for(let i=0;i<250&&(!live.state.playbackReady||Buffer.concat(chunks).length<4);i++)await new Promise(resolve=>setTimeout(resolve,20));
   assert.equal(title,'Radio Calico');assert.equal(Buffer.concat(chunks).subarray(0,4).toString(),'fLaC');
   assert.equal(live.state.playbackReady,true);assert.ok(live.state.pcmBytes>0);assert.throws(()=>live.push(live.state.sessionId,new Uint8Array(4)));

@@ -3,6 +3,7 @@ import { EventEmitter } from 'node:events';
 import { randomBytes } from 'node:crypto';
 import { interfaces } from '../network/interfaces';
 import { receiverController, type ReceiverController } from '../receivers/controller';
+import { readVolume } from '../receivers/volume';
 import { AudioEngine } from './audio-engine';
 import { YandexMusicSource } from './yandex-source';
 import type { AudioSource } from './audio-source';
@@ -20,6 +21,7 @@ export class LiveSession extends EventEmitter {
  private url='';
  private connected=false;
  private commandBusy=false;
+ private volumeSupported=false;
  private lastInput=Date.now();
  private checkingPlayback=false;
  private awaitingPlayback=false;
@@ -61,6 +63,7 @@ export class LiveSession extends EventEmitter {
   const engine=new AudioEngine(source,{sampleRate,channels:2,bitDepth:16});
   const server=new LiveServer();
   this.source=source;this.engine=engine;this.server=device.protocol==='airplay2'?undefined:server;this.controller=device.protocol==='airplay2'?undefined:receiverController(device,address);
+  this.volumeSupported=!!(device.capabilities?.includes('SetVolume')||device.services?.some(service=>service.actions.includes('SetVolume')));
   if(device.protocol==='airplay2')this.airplay=new AirplayOutput(device,address);
   const encoding=device.protocol==='airplay2'?'alac':device.protocol==='cast'?'mp3':'flac';
   this.state={playbackReady:false,encoding,volume:null,sessionId:randomBytes(16).toString('hex'),deviceId:device.id,active:true,connected:false,status:runtimeMessage('runtime029', {p0: encoding.toUpperCase()}),error:'',sampleRate,pcmBytes:0,encodedBytes:0,connections:0,httpRequests:0};
@@ -95,13 +98,35 @@ export class LiveSession extends EventEmitter {
   const ensureActive=()=>{if(!this.state.active||this.state.sessionId!==id)throw new Error(runtimeMessage('runtime035'));};
   try{
    if(!this.engine?.bytes)throw new Error(runtimeMessage('runtime036'));
-   if(this.airplay){const output=this.airplay;await output.play();this.playbackStartedAt=Date.now();ensureActive();const volume=await output.volume().catch(()=>null);ensureActive();this.state.volume=volume?.CurrentVolume??null;this.connected=true;this.awaitingPlayback=true;this.state.connected=true;this.state.status=runtimeMessage('runtime037');this.publish();return {...this.state};}
+   if(this.volumeSupported){
+    const output=this.airplay??controller;
+    try{
+     const volume=readVolume((await output.volume()).CurrentVolume);ensureActive();
+     this.state.volume=volume;
+    }catch{throw new Error('volume.unavailable');}
+   }
+   if(this.airplay){const output=this.airplay;await output.play();this.playbackStartedAt=Date.now();ensureActive();this.connected=true;this.awaitingPlayback=true;this.state.connected=true;this.state.status=runtimeMessage('runtime037');this.publish();return {...this.state};}
    await controller.setUri(this.url,this.streamTitle,undefined,this.state.encoding==='mp3'?'audio/mpeg':'audio/flac');ensureActive();
    await controller.play();ensureActive();
-   const volume=await controller.volume().catch(()=>null);ensureActive();
-   this.state.volume=volume?Number(volume.CurrentVolume):null;this.connected=true;this.awaitingPlayback=true;this.state.connected=true;this.state.status=runtimeMessage('runtime038', {p0: (this.state.encoding??'flac').toUpperCase()});this.publish();return {...this.state};
+   this.connected=true;this.awaitingPlayback=true;this.state.connected=true;this.state.status=runtimeMessage('runtime038', {p0: (this.state.encoding??'flac').toUpperCase()});this.publish();return {...this.state};
   }catch(error){if(this.state.active&&this.state.sessionId===id)await this.fail((error as Error).message);throw error;}
   finally{this.commandBusy=false;}
+ }
+ async volume(value?:number){
+  if(!this.state.active||(!this.controller&&!this.airplay))throw new Error('volume.unavailable');
+  if(this.commandBusy)throw new Error(runtimeMessage('runtime040'));
+  if(value!==undefined&&(!Number.isFinite(value)||value<0||value>100))throw new Error('volume.invalid');
+  const id=this.state.sessionId,output=(this.airplay??this.controller)!;
+  const ensureCurrent=()=>{if(!this.state.active||this.state.sessionId!==id||(this.airplay??this.controller)!==output)throw new Error(runtimeMessage('runtime035'));};
+  this.commandBusy=true;
+  try{
+   if(value!==undefined){await output.volume(value);ensureCurrent();}
+   const response=await output.volume();
+   ensureCurrent();
+   const current=readVolume(response.CurrentVolume);
+   this.state.volume=current;this.publish();return current;
+  }catch(error){if(value!==undefined&&this.state.active&&this.state.sessionId===id&&(this.airplay??this.controller)===output){this.state.volume=null;this.publish();}throw error;
+  }finally{this.commandBusy=false;}
  }
  async command(command:PlaybackCommand,value?:number){
   if(!this.state.active||(!this.controller&&!this.airplay))throw new Error(runtimeMessage('runtime039'));

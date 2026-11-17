@@ -35,6 +35,13 @@ test('Cast media distinguishes a live stream from a finite WAV without invented 
  assert.equal(castMedia('http://x/a.mp3','Live',undefined,'audio/mpeg').streamType,'LIVE');
  const file=castMedia('http://x/a.wav','Test',100,'audio/wav');assert.equal(file.streamType,'BUFFERED');assert.equal(file.duration,undefined);
 });
+test('Cast standby volume never launches, loads or stops a media session',async()=>{
+ const controller=new CastController({ip:'192.168.1.2',apiPort:8009},'192.168.1.14');
+ assert.equal((await controller.volume()).CurrentVolume,13);
+ await controller.volume(5);await controller.stop();
+ assert.deepEqual(latest.calls,[]);assert.equal(latest.loaded,undefined);assert.equal(latest.closed,true);
+});
+
 test('Cast loads owned media, converts volume and closes its connection on stop',async()=>{
  const controller=new CastController({ip:'192.168.1.2',apiPort:8009},'192.168.1.14');
  await controller.stop();

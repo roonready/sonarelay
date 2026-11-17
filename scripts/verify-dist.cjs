@@ -25,7 +25,7 @@ if(!fs.statSync(installer+'.blockmap').size)throw new Error('Missing installer b
 const entries=asar.listPackage(archive).map(file=>file.replaceAll('\\','/'));
 if(entries.some(file=>/^\/(?:project-history\.md|lastfm-api\.json|\.env(?:\..*)?)$/.test(file)))throw new Error('Local configuration leaked into application');
 for(const file of ['LICENSE','NOTICE'])asar.statFile(archive,file);
-for(const file of ['wave-out.ps1','WaveOut.cs'])if(!fs.statSync(path.join(root,'dist/win-unpacked/resources/native-audio',file)).isFile())throw new Error('Missing native radio output helper');
+for(const file of ['wave-out.ps1','WaveOut.cs','windows-volume.ps1','WindowsVolume.cs'])if(!fs.statSync(path.join(root,'dist/win-unpacked/resources/native-audio',file)).isFile())throw new Error('Missing native audio helper');
 if(!main.includes('enableLocalEcho: false'))throw new Error('Local echo suppression absent');
 if(!main.includes('disable-renderer-backgrounding'))throw new Error('Background audio policy missing');
 if(!main.includes('prevent-app-suspension'))throw new Error('Playback power blocker missing');
