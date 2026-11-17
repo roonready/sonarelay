@@ -6,7 +6,7 @@
 
 ## English
 
-SonaRelay is a Windows app for listening to internet radio and Yandex Music on your computer, network speaker, music player, or TV. Radio plays directly from the station's audio stream, without a browser or sign-in. Yandex Music remains available through its own button.
+SonaRelay is a Windows app for listening to internet radio on your computer, network speaker, music player, or TV. Radio plays directly from the station's audio stream, without a browser or sign-in.
 
 ### Features
 
@@ -14,13 +14,12 @@ SonaRelay is a Windows app for listening to internet radio and Yandex Music on y
 - Play through Windows audio output or a network receiver.
 - Discover receivers supporting DLNA, BluOS, AirPlay 2, and Google Cast.
 - Connect WiiM and other Squeezelite players without installing a separate LMS / Lyrion server.
-- Keep streaming when switching tracks in Yandex Music.
 - Scrobble to Last.fm after setup and account connection.
 
 ### Requirements
 
 - A computer running Windows 11, 64-bit.
-- Internet access. A Yandex Music account is needed only for Yandex Music; radio requires no account.
+- Internet access. Radio requires no account.
 - For network playback, a compatible receiver on the same home network as your computer, connected by Wi-Fi or Ethernet.
 
 Keep your computer switched on and SonaRelay running throughout playback.
@@ -43,22 +42,13 @@ For radio, select **This computer (Windows)** or a network receiver, then press 
 
 Radio uses the Windows audio output for local playback; adjust its volume in Windows. Radio tracks with an artist and title can be sent to Last.fm after connecting your account. MusicBrainz is not used.
 
-For Yandex Music:
-
-1. Press **Яндекс Музыка**, sign in on the right, and play a track, album, or playlist.
-2. To listen on your computer, leave **Receiver** set to **This computer (Windows)**.
-3. To listen on a speaker or player, wait for discovery to finish and select it from the same list. Streaming starts automatically.
-4. Allow a few seconds for the connection, especially with Google Cast receivers.
-
-Choose tracks and playlists, pause, and resume using Yandex Music on the right. Your computer's local sound is muted during network streaming. Select **This computer (Windows)** to return audio to your computer.
-
 Selecting another receiver automatically ends the previous stream. A device may appear more than once if it supports several connection methods; check the protocol beside its name.
 
 ### Interface language
 
 SonaRelay supports English and Russian. On first launch it uses your Windows language, with English as the fallback for unsupported languages.
 
-Change the language under **Settings → Language**. Your choice is saved on this computer and takes effect immediately. The embedded Yandex Music website controls its own language separately.
+Change the language under **Settings → Language**. Your choice is saved on this computer and takes effect immediately.
 
 ### Connecting receivers
 
@@ -106,7 +96,7 @@ If Last.fm connection is available in your version, follow the steps below. If t
 
 Click **Disconnect** to disconnect your account. You can also revoke the app's access in your Last.fm account settings.
 
-Last.fm works with both Yandex Music and radio, on your computer and on network receivers. A track must be longer than 30 seconds; a scrobble is submitted after half the track or four minutes of listening, whichever comes first. Radio uses Last.fm's catalog duration when available, or four minutes of confirmed listening when the duration is unknown. Both artist and title are required. Stops, buffering and seeking do not count as listening time. Yandex Music requires an available duration and playback position for scrobbling.
+Last.fm works with radio, on your computer and on network receivers. A track must be longer than 30 seconds; a scrobble is submitted after half the track or four minutes of listening, whichever comes first. Radio uses Last.fm's catalog duration when available, or four minutes of confirmed listening when the duration is unknown. Both artist and title are required. Stops, buffering and seeking do not count as listening time.
 
 The Last.fm settings show the last Now Playing update or scrobble accepted by the service, including the track and submission time.
 
@@ -139,7 +129,7 @@ Network receivers buffer audio before playing it. Pauses, track changes, and oth
 
 ### Audio quality and limitations
 
-DLNA, BluOS, and Squeezelite use FLAC; AirPlay 2 uses ALAC at 44.1 kHz / 16-bit; Google Cast uses MP3 at 320 kbps. FLAC and ALAC transmit the audio received by the app without additional lossy compression. SonaRelay does not guarantee bit-perfect transmission of the original Yandex Music file.
+DLNA, BluOS, and Squeezelite use FLAC; AirPlay 2 uses ALAC at 44.1 kHz / 16-bit; Google Cast uses MP3 at 320 kbps. FLAC and ALAC transmit the audio received by the app without additional lossy compression. SonaRelay does not guarantee bit-perfect transmission of the original radio stream.
 
 Available track details depend on the music player. Updating track information on a DLNA receiver's display is not supported yet.
 
@@ -149,7 +139,7 @@ Your app profile is stored locally in `%APPDATA%\sonarelay`.
 
 ## Русский
 
-SonaRelay — приложение для Windows, с которым можно слушать интернет-радио и Яндекс Музыку на компьютере, сетевой колонке, музыкальном плеере или телевизоре. Радио воспроизводится напрямую из аудиопотока без браузера и авторизации. Яндекс Музыка доступна по отдельной кнопке.
+SonaRelay — приложение для Windows, с которым можно слушать интернет-радио на компьютере, сетевой колонке, музыкальном плеере или телевизоре. Радио воспроизводится напрямую из аудиопотока без браузера и авторизации.
 
 ### Что умеет приложение
 
@@ -157,13 +147,12 @@ SonaRelay — приложение для Windows, с которым можно 
 - Воспроизводить музыку через аудиовыход Windows или сетевой приёмник.
 - Находить устройства с поддержкой DLNA, BluOS, AirPlay 2 и Google Cast.
 - Подключать WiiM и другие плееры с Squeezelite без отдельной установки музыкального сервера LMS / Lyrion.
-- Продолжать трансляцию при переключении треков в Яндекс Музыке.
 - Отправлять сведения о прослушиваниях в Last.fm после настройки и подключения аккаунта.
 
 ### Что понадобится
 
 - Компьютер с Windows 11, 64-разрядная версия.
-- Доступ к интернету. Аккаунт Яндекс Музыки нужен только для Яндекс Музыки; радио работает без аккаунта.
+- Доступ к интернету. Радио работает без аккаунта.
 - Для сетевого воспроизведения — совместимый приёмник в той же домашней сети, что и компьютер. Подключение может быть по Wi-Fi или кабелю.
 
 Компьютер должен оставаться включённым, а приложение — запущенным всё время прослушивания.
@@ -186,22 +175,13 @@ SonaRelay — приложение для Windows, с которым можно 
 
 При прослушивании радио на компьютере громкость регулируется в Windows. Композиции радио с известными исполнителем и названием можно отправлять в Last.fm после подключения аккаунта. MusicBrainz не используется.
 
-Для Яндекс Музыки:
-
-1. Нажмите **«Яндекс Музыка»**, войдите в аккаунт справа и включите композицию, альбом или плейлист.
-2. Для прослушивания на компьютере оставьте в списке **«Приёмник»** вариант **«Этот компьютер (Windows)»**.
-3. Для прослушивания на колонке или плеере дождитесь окончания поиска и выберите нужное устройство в том же списке. Передача звука начнётся автоматически.
-4. Дождитесь подключения. На некоторых устройствах, особенно Google Cast, запуск может занять несколько секунд.
-
-Треки, плейлисты, паузу и продолжение воспроизведения выбирайте в интерфейсе Яндекс Музыки справа. Во время сетевой трансляции звук на самом компьютере отключается. Чтобы вернуть его, выберите **«Этот компьютер (Windows)»**.
-
 При выборе другого приёмника приложение автоматически завершает предыдущую трансляцию. Одно устройство может отображаться несколько раз, если оно поддерживает разные способы подключения: ориентируйтесь на пометку протокола рядом с названием.
 
 ### Язык интерфейса
 
 SonaRelay поддерживает английский и русский языки. При первом запуске приложение выбирает язык Windows; если он не поддерживается, используется английский.
 
-Изменить язык можно в **Settings → Language** / **Настройки → Язык**. Выбор сохраняется на этом компьютере и применяется сразу. Язык встроенного сайта Яндекс Музыки настраивается отдельно на самом сайте.
+Изменить язык можно в **Settings → Language** / **Настройки → Язык**. Выбор сохраняется на этом компьютере и применяется сразу.
 
 ### Подключение устройств
 

@@ -1,6 +1,6 @@
 {
   "name": "sonarelay",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "SonaRelay - DLNA playback and Yandex Music browser",
   "private": true,
   "main": "out/main/index.js",

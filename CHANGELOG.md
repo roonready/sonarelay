@@ -2,6 +2,13 @@
 
 Versions follow Semantic Versioning. Stable releases use `x.y.z`; beta releases use `x.y.z-beta.N`.
 
+## [1.2.1] - 2026-11-17
+
+### Changed
+
+- Removed the Yandex Music button from the interface. The source panel now contains only Наше Радио and Radio Calico.
+- Updated UI smoke checks for the two radio buttons.
+
 ## [1.2.0] - 2026-11-16
 
 ### Added
