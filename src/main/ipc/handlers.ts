@@ -32,8 +32,8 @@ export function registerHandlers(window: BrowserWindow, discovery: Discovery, so
   const player = new Player();
   const catalog=new MusicCatalog();
   handle('catalog:search',(_event,artist:unknown,title:unknown)=>catalog.search(artist,title));
-  handle('catalog:open',async(_event,id:unknown,albumId:unknown)=>{
-    await shell.openExternal(musicTrackUrl(id,albumId));
+  handle('catalog:open',async(_event,id:unknown,albumId:unknown,provider:unknown)=>{
+    await shell.openExternal(musicTrackUrl(id,albumId,provider));
   });
   const windowsVolume=new WindowsVolume(app.isPackaged?path.join(process.resourcesPath,'native-audio'):path.join(app.getAppPath(),'assets/native'));
   handle('windows:volume',(_event,value:unknown)=>{

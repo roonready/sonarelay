@@ -10,7 +10,6 @@ import LastfmSettings from '../components/LastfmSettings.vue';
 import AppUpdates from '../components/AppUpdates.vue';
 import RadioPlayer from '../components/RadioPlayer.vue';
 import { useRadio } from '../stores/radio';
-import NowPlaying from '../components/NowPlaying.vue';
 const radio=useRadio();
 const store = useDevices();
 let cleanup: (() => void) | undefined;
@@ -25,7 +24,6 @@ function changeInterface(event: Event) { void store.scan((event.target as HTMLSe
 <template>
   <aside class="panel">
     <header><img src="/favicon.svg" width="40" height="40" alt="" aria-hidden="true"><span class="brand">{{ t('app.brand') }}</span><h1>{{ t('devices.title') }}</h1><p>{{ t('app.protocols') }}</p></header>
-    <RadioPlayer />
     <label for="network">{{ t('network.label') }}</label>
     <select id="network" :value="store.state.selectedAddress" @change="changeInterface">
       <option value="" disabled>{{ t('network.choose') }}</option>
@@ -39,5 +37,5 @@ function changeInterface(event: Event) { void store.scan((event.target as HTMLSe
     <LastfmSettings />
     <AppUpdates />
   </aside>
-  <NowPlaying />
+  <RadioPlayer />
 </template>

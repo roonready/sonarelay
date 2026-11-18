@@ -4,6 +4,7 @@ const {LastfmClient}=require('../src/main/lastfm/client.ts');
 const {LastfmTracker}=require('../src/main/lastfm/tracker.ts');
 const {LastfmService}=require('../src/main/lastfm/service.ts');
 const {RadioService}=require('../src/main/radio/service.ts');
+const {radioStations}=require('../src/shared/radio.ts');
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 const settings={scrobbling:true,nowPlaying:true},epoch=1700000000000;
 function track(position,extra={}){return {source:'radio',sourceId:'nashe-radio',title:'Track',artist:'Artist',album:'',trackId:'play-1',duration:null,position,playing:true,rate:1,...extra};}
@@ -66,7 +67,7 @@ test('actual radio playback snapshots reach Last.fm through PCM progress; catalo
   assert.equal(lastfm.state.activity.kind,'scrobble');
   await radio.stop();now+=1000;radio.publishPlayback();await tick();
   assert.equal(calls.filter(call=>call.parameters.method==='track.scrobble').length,1);
-  await radio.toggle('radio-calico','');await tick();
+  await radio.toggle(radioStations[1].id,'');await tick();
   assert.equal(calls.filter(call=>call.parameters.method==='track.updateNowPlaying').length,2);
  }finally{await radio.dispose();await lastfm.dispose();}
 });

@@ -10,7 +10,7 @@ SonaRelay is a Windows app for listening to internet radio on your computer, net
 
 ### Features
 
-- Play **Наше Радио** and **Radio Calico** directly, with one button per station.
+- Play stations from the radio catalog, with one button per station.
 - Play through Windows audio output or a network receiver.
 - Discover receivers supporting DLNA, BluOS, AirPlay 2, and Google Cast.
 - Connect WiiM and other Squeezelite players without installing a separate LMS / Lyrion server.
@@ -38,7 +38,7 @@ For local builds and publishing, see [RELEASE.md](RELEASE.md). Version history i
 
 ### Start listening
 
-For radio, select **This computer (Windows)** or a network receiver, then press **Наше Радио** or **Radio Calico**. Press the same station again to stop. Choosing another station stops the previous one. The panel shows connecting, playing, stopped, or a connection error. Available station and track details appear automatically; metadata is optional.
+For radio, select **This computer (Windows)** or a network receiver, then choose a station from the list on the right. Press the same station again to stop. Choosing another station stops the previous one. The playback panel shows the connection status, available track metadata and audio stream details.
 
 For local playback, use the **Windows volume** slider under **This computer**. It controls the overall Windows output volume for all applications and works before playback starts. The slider reflects system volume changes and preserves the Windows mute setting. Radio tracks with an artist and title can be sent to Last.fm after connecting your account. MusicBrainz is not used.
 
@@ -46,7 +46,7 @@ Selecting a supported output sets its volume to **10** before playback is allowe
 
 Expand **Stream details** to see the station's source format and the format sent to your output. Codec, sample rate, channels, bit depth and known bitrate appear separately. Unavailable values are shown as unknown; station-reported bitrate is labelled and may differ from the actual variable stream bitrate.
 
-The right-hand panel shows the current artist, track, album and images. SonaRelay searches the Yandex Music catalog using the artist and title provided by the station. Album details, artwork and available artist photos come from the matching catalog entry; if no match is found, the station's metadata remains visible. The catalog lookup does not require signing in, and radio playback continues if it is unavailable. **Open in Yandex Music** opens the matched track in your external browser.
+The right-hand panel shows the current artist, track, album and images. SonaRelay searches Yandex Music by the artist and title provided by the station, then tries Deezer if Yandex Music returns no match. The card shows the source of the album details and images and links to the matched track. If neither catalog has a match, the station's metadata remains visible. Searches are public and run independently of radio playback.
 
 Selecting another receiver automatically ends the previous stream. A device may appear more than once if it supports several connection methods; check the protocol beside its name.
 
@@ -149,7 +149,7 @@ SonaRelay — приложение для Windows, с которым можно 
 
 ### Что умеет приложение
 
-- Воспроизводить **«Наше Радио»** и **Radio Calico** напрямую — отдельной кнопкой для каждой станции.
+- Воспроизводить станции из радиокаталога отдельной кнопкой для каждой станции.
 - Воспроизводить музыку через аудиовыход Windows или сетевой приёмник.
 - Находить устройства с поддержкой DLNA, BluOS, AirPlay 2 и Google Cast.
 - Подключать WiiM и другие плееры с Squeezelite без отдельной установки музыкального сервера LMS / Lyrion.
@@ -177,7 +177,7 @@ SonaRelay — приложение для Windows, с которым можно 
 
 ### Как начать слушать
 
-Для радио выберите **«Этот компьютер (Windows)»** или сетевой приёмник, затем нажмите **«Наше Радио»** либо **Radio Calico**. Повторное нажатие той же кнопки останавливает поток. Выбор другой станции завершает предыдущую трансляцию. Панель показывает подключение, воспроизведение, остановку или ошибку. Сведения о станции и композиции появляются при наличии метаданных; их отсутствие не мешает звуку.
+Для радио выберите **«Этот компьютер (Windows)»** или сетевой приёмник, затем выберите станцию в списке справа. Повторное нажатие той же кнопки останавливает поток. Выбор другой станции завершает предыдущую трансляцию. Панель воспроизведения показывает состояние подключения, доступные метаданные композиции и характеристики потока.
 
 При прослушивании на компьютере используйте ползунок **«Громкость Windows»** в блоке **«Этот компьютер»**. Он меняет общую громкость выхода Windows для всех приложений и работает до запуска воспроизведения. Ползунок отражает изменения системной громкости и сохраняет состояние отключённого звука Windows. Композиции радио с известными исполнителем и названием можно отправлять в Last.fm после подключения аккаунта. MusicBrainz не используется.
 
@@ -185,7 +185,7 @@ SonaRelay — приложение для Windows, с которым можно 
 
 В блоке **«Характеристики потока»** отдельно показаны исходный формат радиостанции и формат передачи на выбранный выход: кодек, частота дискретизации, каналы, разрядность и известный битрейт. Недоступные значения отмечены как неизвестные. Заявленный станцией битрейт помечен отдельно и может отличаться от фактического битрейта переменного потока.
 
-Справа отображаются текущие исполнитель, композиция, альбом и изображения. SonaRelay ищет сведения в каталоге Яндекс Музыки по исполнителю и названию, переданным радиостанцией. Альбом, обложка и доступное фото исполнителя берутся из найденной записи; если совпадения нет, остаются сведения радиостанции. Для поиска в каталоге вход в аккаунт не требуется. Недоступность поиска не прерывает радио. Ссылка **«Открыть в Яндекс Музыке»** открывает найденный трек во внешнем браузере.
+Справа отображаются текущие исполнитель, композиция, альбом и изображения. SonaRelay ищет трек в Яндекс Музыке по исполнителю и названию, переданным радиостанцией, и обращается к Deezer, если совпадения нет. В карточке указан источник сведений и есть ссылка на найденный трек. Если оба каталога вернули пустой результат, остаются сведения радиостанции. Поиск выполняется без входа в аккаунт и идёт независимо от воспроизведения.
 
 При выборе другого приёмника приложение автоматически завершает предыдущую трансляцию. Одно устройство может отображаться несколько раз, если оно поддерживает разные способы подключения: ориентируйтесь на пометку протокола рядом с названием.
 

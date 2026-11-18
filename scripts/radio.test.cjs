@@ -84,11 +84,13 @@ test('one radio source at a time; stop cancels startup, station switch cleans ol
  const stopped=service.toggle('nashe-radio','');await Promise.all([first,stopped]);assert.equal(service.state.status,'stopped');assert.equal(sources[0].stopped,true);
  blocking=false;
  await service.toggle('nashe-radio','');assert.equal(service.state.status,'playing');
- await service.toggle('radio-calico','');assert.equal(service.state.stationId,'radio-calico');assert.equal(sources[1].stopped,true);assert.equal(outputs[1].stopped,true);
- await service.route('receiver');assert.equal(live.starts,1);assert.equal(live.input.title,'Radio Calico');assert.equal(service.state.status,'playing');
+ const secondStation=radioStations[1];
+ await service.toggle(secondStation.id,'');assert.equal(service.state.stationId,secondStation.id);assert.equal(sources[1].stopped,true);assert.equal(outputs[1].stopped,true);
+ await service.route('receiver');assert.equal(live.starts,1);assert.equal(live.input.title,secondStation.name);assert.equal(service.state.status,'playing');
  await service.music();assert.equal(service.state.mode,'music');assert.equal(service.state.status,'stopped');
  await service.dispose();assert.equal(live.listenerCount('state'),0);assert.ok(sources.every(source=>source.stopped));assert.ok(prepare>=3);
- assert.deepEqual(radioStations.map(station=>station.id),['nashe-radio','radio-calico']);
+ assert.equal(radioStations.length,160);
+ assert.equal(new Set(radioStations.map(station=>station.id)).size,radioStations.length);
 });
 
 test('external radio PCM uses the existing LiveSession and FLAC server, with station title and normal cleanup',async()=>{

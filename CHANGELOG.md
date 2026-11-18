@@ -2,6 +2,18 @@
 
 Versions follow Semantic Versioning. Stable releases use `x.y.z`; beta releases use `x.y.z-beta.N`.
 
+## [1.4.0-beta.2] - 2026-11-18
+
+### Added
+
+- A scrollable catalog of 160 radio stations that returned non-empty ICY metadata during testing.
+- Deezer track lookup when Yandex Music returns no match, with artwork, album information and a link to the matched track.
+
+### Changed
+
+- Radio station controls and current playback details now appear side by side on the right.
+- The track card shows the catalog provider separately from the album label.
+
 ## [1.4.0-beta.1] - 2026-11-17
 
 ### Added

@@ -22,11 +22,30 @@ export function matchCatalogTrack(data:unknown,artist:string,title:string):Catal
  if(!row)return null;
  const album=Array.isArray(row.albums)?row.albums.find((item:any)=>text(item?.title)):null,performers=artists(row);
  const portrait=performers.find(item=>item.cover?.type==='from-artist-photos')?.cover?.uri;
- return {id:catalogId(row.id)!,albumId:catalogId(album?.id),title:text(row.title),artist:performers.map(item=>text(item.name)).join(', '),album:text(album?.title),
+ return {provider:'yandex',id:catalogId(row.id)!,albumId:catalogId(album?.id),title:text(row.title),artist:performers.map(item=>text(item.name)).join(', '),album:text(album?.title),
   cover:catalogImage(row.coverUri??album?.coverUri,'1000x1000'),artistPicture:catalogImage(portrait,'300x300')};
 }
 
-/** Only public catalog metadata; no audio, Yandex credentials or browser session. */
+function deezerImage(value:unknown):string|null{
+ if(typeof value!=='string'||value.length>2048)return null;
+ try{
+  const url=new URL(value);
+  return url.origin==='https://cdn-images.dzcdn.net'&&!url.username&&!url.password?url.href:null;
+ }catch{return null;}
+}
+
+function matchDeezerTrack(rows:any[],artist:string,title:string):CatalogTrack|null{
+ const artistKey=normalized(artist),trackKey=titleKey(title);
+ const matches=rows.filter(row=>catalogId(row?.id)&&normalized(text(row.artist?.name))===artistKey&&titleKey(text(row.title))===trackKey);
+ const row=matches.find(row=>normalized(text(row.title))===normalized(title))??matches[0];
+ if(!row)return null;
+ return {provider:'deezer',id:catalogId(row.id)!,albumId:catalogId(row.album?.id),title:text(row.title_short)||text(row.title),
+  artist:text(row.artist.name),album:text(row.album?.title),
+  cover:deezerImage(row.album?.cover_xl)??deezerImage(row.album?.cover_big),
+  artistPicture:deezerImage(row.artist.picture_big)??deezerImage(row.artist.picture_medium)};
+}
+
+/** Public catalog metadata lookup. */
 export class MusicCatalog {
  private cache=new Map<string,{expires:number;track:CatalogTrack|null}>();
  private controller?:AbortController;
@@ -49,12 +68,24 @@ export class MusicCatalog {
    if(responseData?.error||!responseData?.result||typeof responseData.result!=='object')throw new Error('catalog.unavailable');
    const rows=responseData.result.tracks?.results??[];
    if(!Array.isArray(rows)||controller.signal.aborted||this.disposed)throw new Error('catalog.unavailable');
-   const track=matchCatalogTrack(rows,artist as string,title as string);
+   let track=matchCatalogTrack(rows,artist as string,title as string);
+   if(!track)track=await this.searchDeezer(artist as string,title as string,controller.signal);
+   if(controller.signal.aborted||this.disposed)throw new Error('catalog.unavailable');
    this.cache.delete(key);this.cache.set(key,{track,expires:this.now()+(track?6*60*60*1000:60000)});
    while(this.cache.size>64)this.cache.delete(this.cache.keys().next().value!);
    return track;
   }catch{throw new Error('catalog.unavailable');}
   finally{clearTimeout(timer);if(this.controller===controller)this.controller=undefined;}
+ }
+ private async searchDeezer(artist:string,title:string,signal:AbortSignal):Promise<CatalogTrack|null>{
+  const url=new URL('https://api.deezer.com/search');
+  url.searchParams.set('q',`${artist} ${title}`);
+  url.searchParams.set('limit','25');
+  const response=await this.fetcher(url,{signal,headers:{Accept:'application/json'}});
+  if(!response.ok)throw new Error('catalog.unavailable');
+  const result=await response.json();
+  if(result?.error||!Array.isArray(result?.data))throw new Error('catalog.unavailable');
+  return matchDeezerTrack(result.data,artist,title);
  }
  dispose(){this.disposed=true;this.controller?.abort();this.cache.clear();}
 }

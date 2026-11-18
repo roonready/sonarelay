@@ -1,5 +1,6 @@
 const {app,BrowserWindow,webContents}=require('electron');
 const path=require('node:path'),assert=require('node:assert/strict');
+const stations=require('../src/shared/radio-stations.json');
 const root=path.resolve(__dirname,'..');
 const directory=path.join(root,'.verification/radio-ui-profile');
 app.commandLine.appendSwitch('user-data-dir',directory);app.setPath('userData',directory);
@@ -25,20 +26,22 @@ app.on('browser-window-created',(_event,created)=>{
     clearTimeout(timeout);console.log(JSON.stringify({closeDuringMusicLoad:true}));window.close();return;
    }
    await window.webContents.executeJavaScript('void window.bridge.onRadioState(state=>window.__radioSmokeState=state);');
-   async function click(name){await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('button')).find(button=>button.textContent.trim()===${JSON.stringify(name)}).click()`);}
+   async function click(id){await window.webContents.executeJavaScript(`document.querySelector(${JSON.stringify(`[data-station-id="${id}"]`)}).click()`);}
    async function wait(status,station){for(let i=0;i<300;i++){const state=await window.webContents.executeJavaScript('window.__radioSmokeState');if(state?.status==='error')throw new Error(state.error);if(state?.status===status&&(!station||state.stationId===station))return state;await delay(50);}throw new Error('Radio state timeout: '+status);}
-   await click('Наше Радио');await wait('playing','nashe-radio');assert.equal(browserCount(),0);
-   assert.equal(await window.webContents.executeJavaScript("document.querySelectorAll('.radio-player button').length"),2);
+   const [first,second]=stations;
+   await click(first.id);await wait('playing',first.id);assert.equal(browserCount(),0);
+   assert.equal(await window.webContents.executeJavaScript("document.querySelectorAll('.radio-workspace .radio-player button').length"),stations.length);
+   assert.equal(await window.webContents.executeJavaScript("document.querySelectorAll('.panel [data-station-id]').length"),0);
    await window.webContents.executeJavaScript('window.bridge.acceptMusicConsent(1)');
-   await click('Наше Радио');await wait('stopped');
-   await click('Radio Calico');await wait('playing','radio-calico');assert.equal(browserCount(),0);
-   await click('Radio Calico');await wait('stopped');
+   await click(first.id);await wait('stopped');
+   await click(second.id);await wait('playing',second.id);assert.equal(browserCount(),0);
+   await click(second.id);await wait('stopped');
    await window.webContents.executeJavaScript('void window.bridge.openMusic().then(()=>window.__musicSmokeReady=true)');
    for(let i=0;i<400;i++){if(await window.webContents.executeJavaScript('window.__musicSmokeReady===true'))break;await delay(50);}
    assert.equal(browserCount(),1);assert.ok(webContents.getAllWebContents().some(contents=>contents.getURL().startsWith('https://music.yandex.ru/')));
-   await click('Наше Радио');await wait('playing','nashe-radio');
+   await click(first.id);await wait('playing',first.id);
    assert.equal(browserCount(),0);
-   console.log(JSON.stringify({buttons:true,nashe:true,calico:true,noYandexButton:true,stopAndRestart:true,musicOnDemand:true,radioClosesMusic:true,embeddedBrowserCount:browserCount(),shutdownWhilePlaying:true}));
+   console.log(JSON.stringify({stationButtons:stations.length,stationSwitch:true,noYandexButton:true,stopAndRestart:true,musicOnDemand:true,radioClosesMusic:true,embeddedBrowserCount:browserCount(),shutdownWhilePlaying:true}));
    clearTimeout(timeout);window.close();
    setTimeout(()=>{if(!window.isDestroyed())app.exit(1);},4000).unref();
   }catch(error){console.error(error.message);clearTimeout(timeout);app.exit(1);}

@@ -1,10 +1,8 @@
 import type { LiveState } from './types';
+import stationCatalog from './radio-stations.json';
 export const RADIO_PCM_FORMAT={sampleRate:48000,channels:2,bitDepth:16} as const;
 export interface RadioStation { id: string; name: string; streamUrl: string }
-export const radioStations: readonly RadioStation[] = [
-  { id: 'nashe-radio', name: 'Наше Радио', streamUrl: 'https://nashe1.hostingradio.ru/nashe-256' },
-  { id: 'radio-calico', name: 'Radio Calico', streamUrl: 'http://roon.radio-calico.com:8000/roon' },
-];
+export const radioStations: readonly RadioStation[] = stationCatalog;
 export interface RadioMetadata { title: string; artist: string; streamTitle: string; streamUrl: string; station: string }
 export interface RadioStreamInfo {
   codec:string|null; sampleRate:number|null; channels:number|null; bitDepth:number|null;
