@@ -2,6 +2,12 @@
 
 Versions follow Semantic Versioning. Stable releases use `x.y.z`; beta releases use `x.y.z-beta.N`.
 
+## [1.4.0-beta.4] - 2026-11-18
+
+### Changed
+
+- Compact left sidebar on short windows, with scrolling confined to individual sections when needed.
+
 ## [1.4.0-beta.3] - 2026-11-18
 
 ### Changed

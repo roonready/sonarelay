@@ -49,6 +49,9 @@ async function setting(key:keyof LastfmPreferences,event:Event){
 </template>
 <style scoped>
 .app-settings{margin-top:18px;border-top:1px solid #303b50;padding-top:14px;font-size:13px}
+.app-settings[open]{display:flex;flex-direction:column;min-height:52px}
+.app-settings summary{flex-shrink:0}
+.app-settings[open]::details-content{min-height:0;overflow-y:auto;scrollbar-width:thin;padding:0 6px 4px}
 .language-setting{display:block;margin-top:14px;margin-bottom:8px}
 .lastfm{display:grid;gap:10px;padding-top:12px}.lastfm h2{font-size:15px;margin:0}.lastfm p{margin:0;font-size:12px;line-height:1.5;color:#aab5c8}
 .lastfm label{display:flex;align-items:center;gap:8px;margin:0}.lastfm input{width:auto}.lastfm button{padding:9px;border:1px solid #394359;border-radius:7px;background:#28314c}.setup-hint{overflow-wrap:anywhere}
