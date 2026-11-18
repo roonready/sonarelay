@@ -2,6 +2,14 @@
 
 Versions follow Semantic Versioning. Stable releases use `x.y.z`; beta releases use `x.y.z-beta.N`.
 
+## [1.4.0-beta.5] - 2026-11-18
+
+### Fixed
+
+- Keep the selected volume slider position while dragging and while the output confirms the change.
+- Remove horizontal scrolling from the volume controls.
+- Keep active radio playback on the selected network receiver when it temporarily disappears from discovery.
+
 ## [1.4.0-beta.4] - 2026-11-18
 
 ### Changed

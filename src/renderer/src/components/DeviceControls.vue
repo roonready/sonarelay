@@ -2,7 +2,7 @@
 import { useI18n } from 'vue-i18n';
 import { localizeError, localizeMessage } from '../i18n';
 const { t, n } = useI18n();
-import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
+import { ref, shallowRef, watch, computed, onMounted, onUnmounted } from 'vue';
 import type { PlaybackState, PlaybackCommand, LiveState } from '../../../shared/types';
 import { useDevices } from '../stores/devices';
 import { ipc } from '../services/ipc';
@@ -23,7 +23,12 @@ const selected=computed(()=>devices.state.devices.find(d=>d.id===devices.selecte
 const isLocal=computed(()=>devices.selectedId===LOCAL_OUTPUT_ID);
 const isLive=computed(()=>live.value?.active===true && live.value.deviceId===devices.selectedId);
 const active=computed(()=>state.value.deviceId===devices.selectedId || isLive.value);
-const volumeValue=computed(()=>receiverVolume.deviceId===devices.selectedId?receiverVolume.value:null);
+const volumeDraft=shallowRef<{id:string;value:number}>();
+const volumeValue=computed(()=>{
+ const id=devices.selectedId;
+ if(volumeDraft.value?.id===id)return volumeDraft.value.value;
+ return receiverVolume.deviceId===id?receiverVolume.value:null;
+});
 const router=new SelectionRouter<MediaStream>(
  ()=>requestMusicStream(),
  async(id,input,signal)=>{await receiverVolume.ready(id);return startLiveCapture(id,error=>{if(!disposed&&devices.selectedId===id)state.value.error=error;},signal,input);},
@@ -76,11 +81,12 @@ async function command(command:PlaybackCommand,value?:number){
  finally{busy.value=false;}
 }
 watch([()=>devices.selectedId,()=>radio.state.mode],([id,mode],previous)=>{
+ if(id!==previous?.[0])volumeDraft.value=undefined;
  if(mode==='music'||id!==previous?.[0])void routeSelection(id);
  else void router.stop();
 },{flush:'sync',immediate:true});
 let volumeRefresh:ReturnType<typeof setInterval>|undefined;
-onMounted(()=>{volumeRefresh=setInterval(()=>{if(isLocal.value&&!receiverVolume.busy&&!disposed)void receiverVolume.request(LOCAL_OUTPUT_ID);},2500);});
+onMounted(()=>{volumeRefresh=setInterval(()=>{if(isLocal.value&&!receiverVolume.busy&&!volumeDraft.value&&!disposed)void receiverVolume.request(LOCAL_OUTPUT_ID);},2500);});
 onUnmounted(()=>{disposed=true;revision++;clearInterval(volumeRefresh);receiverVolume.reset();unsubscribe();void router.stop().catch(console.error);});
 async function loadVolume(){
  const id=devices.selectedId;
@@ -94,7 +100,19 @@ watch([()=>devices.selectedId,()=>selected.value?.id],()=>{
  if(!isLocal.value&&!selected.value){if(receiverVolume.deviceId!==id)receiverVolume.reset(id);return;}
  void receiverVolume.select(id,!!(isLocal.value||supported('SetVolume'))).catch(()=>{});
 },{flush:'sync',immediate:true});
-function volume(event:Event){void receiverVolume.request(devices.selectedId,Number((event.target as HTMLInputElement).value));}
+function previewVolume(event:Event){
+ const draft={id:devices.selectedId,value:(event.target as HTMLInputElement).valueAsNumber};
+ volumeDraft.value=draft;
+ return draft;
+}
+async function volume(event:Event){
+ const draft=previewVolume(event);
+ try{await receiverVolume.request(draft.id,draft.value);}
+ finally{if(volumeDraft.value===draft)volumeDraft.value=undefined;}
+}
+function cancelVolumePreview(){
+ if(!receiverVolume.busy)volumeDraft.value=undefined;
+}
 </script>
 <template>
  <section v-if="isLocal||selected" class="controls" :aria-label="t('playback.controls')">
@@ -111,7 +129,7 @@ function volume(event:Event){void receiverVolume.request(devices.selectedId,Numb
    <p v-if="radio.state.mode==='music'&&active&&!isLive">{{ localizeMessage(state.status) }}</p>
   </template>
   <label v-if="isLocal||supported('SetVolume')">{{ volumeValue===null?t(isLocal?(receiverVolume.busy?'volume.windowsLoading':'volume.windowsUnknown'):(receiverVolume.busy?'volume.loading':'volume.unknown')):t(isLocal?'volume.windowsLabel':'playback.volume', { value: n(volumeValue) }) }}
-   <input type="range" min="0" max="100" :value="volumeValue??0" :aria-valuetext="volumeValue===null?t(isLocal?'volume.windowsUnknown':'volume.unknown'):n(volumeValue)" :disabled="busy||receiverVolume.busy||volumeValue===null" @change="volume">
+   <input :key="devices.selectedId" type="range" min="0" max="100" :value="volumeValue??0" :aria-valuetext="volumeValue===null?t(isLocal?'volume.windowsUnknown':'volume.unknown'):n(volumeValue)" :disabled="busy||receiverVolume.busy||volumeValue===null" @input="previewVolume" @change="volume" @pointercancel="cancelVolumePreview" @blur="cancelVolumePreview">
   </label>
   <p v-if="isLocal&&receiverVolume.muted">{{ t('volume.windowsMuted') }}</p>
   <p v-if="receiverVolume.error||(!receiverVolume.initialized&&!receiverVolume.busy&&(isLocal||supported('SetVolume')))" class="error" role="alert">{{ localizeError(receiverVolume.error||'volume.selectionFailed') }} <button type="button" :disabled="receiverVolume.busy" @click="loadVolume">{{ t('volume.retry') }}</button></p>

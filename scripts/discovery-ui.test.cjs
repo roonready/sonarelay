@@ -5,7 +5,7 @@ test('unchanged receiver menu keeps its array and items across heartbeat and exp
  const first=reconcileReceiverOptions([],[device]);const next=reconcileReceiverOptions(first,[{...device,expiresAt:Date.now()+90000}]);
  assert.equal(first,next);assert.equal(first[0],next[0]);assert.equal(next[0].label,'WiiM Pro (Google Cast)');
 });
-test('store publishes menu only after scan completion and keeps selected output through partial replies',async()=>{
+test('receiver menu waits for completed scans and keeps the active radio output through expiry',async()=>{
  const {createPinia,setActivePinia}=require('pinia');setActivePinia(createPinia());let notify;
  const snapshot={diagnostics:{replies:0,descriptions:0,unicastPeers:0,slimAddress:'192.168.1.14'},interfaces:[],selectedAddress:'192.168.1.14',devices:[device],scanning:false,error:'',lastScan:1};
  global.window={bridge:{getState:async()=>snapshot,onState:callback=>{notify=callback;return ()=>{};}}};
@@ -13,5 +13,22 @@ test('store publishes menu only after scan completion and keeps selected output 
  notify({...snapshot,scanning:true,devices:[]});assert.equal(store.receiverOptions,menu);assert.equal(store.selectedId,device.id);
  notify({...snapshot,scanning:true,devices:[device,{...device,id:'new',protocol:'dlna'}]});assert.equal(store.receiverOptions,menu);
  notify({...snapshot,devices:[{...device,expiresAt:99999}],lastScan:2});assert.equal(store.receiverOptions,menu);assert.equal(store.selectedId,device.id);
- notify({...snapshot,devices:[],lastScan:3});assert.equal(store.receiverOptions.length,0);assert.equal(store.selectedId,'local-output');stop();
+ notify({...snapshot,devices:[],lastScan:3});assert.equal(store.receiverOptions.length,0);assert.equal(store.selectedId,'local-output');
+ const {useRadio}=require('../src/renderer/src/stores/radio.ts');
+ const {nextTick}=require('vue');
+ const radio=useRadio();
+ notify({...snapshot,lastScan:4});
+ store.selectedId=device.id;
+ radio.state={...radio.state,status:'playing',outputId:device.id};
+ notify({...snapshot,devices:[],scanning:true});
+ notify({...snapshot,devices:[],lastScan:2});
+ assert.equal(store.selectedId,device.id);
+ assert.equal(store.receiverOptions[0].id,device.id);
+ assert.equal(store.state.devices[0].id,device.id);
+ await nextTick();
+ radio.state={...radio.state,status:'stopped'};
+ await nextTick();
+ assert.equal(store.selectedId,'local-output');
+ assert.equal(store.receiverOptions.length,0);
+ stop();
 });

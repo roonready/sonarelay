@@ -47,11 +47,12 @@ export function registerHandlers(window: BrowserWindow, discovery: Discovery, so
   const live = new LiveSession(() => discovery.state.selectedAddress);
   handle('receiver:volume',async(_event,id:unknown,value:unknown)=>{
     if(typeof id!=='string'||(value!==undefined&&(typeof value!=='number'||!Number.isFinite(value)||value<0||value>100)))throw new Error('volume.invalid');
+    if(live.state.active&&live.state.deviceId===id){
+      return {deviceId:id,volume:await live.volume(value as number|undefined)};
+    }
     const device=discovery.state.devices.find(device=>device.id===id);
     if(!device)throw new Error(runtimeMessage('runtime096'));
-    const volume=live.state.active&&live.state.deviceId===id
-      ?await live.volume(value as number|undefined)
-      :await receiverVolume(device,discovery.state.devices,discovery.state.selectedAddress,value as number|undefined);
+    const volume=await receiverVolume(device,discovery.state.devices,discovery.state.selectedAddress,value as number|undefined);
     return {deviceId:id,volume};
   });
   let musicBegin: Promise<unknown> | undefined;
