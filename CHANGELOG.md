@@ -2,6 +2,12 @@
 
 Versions follow Semantic Versioning. Stable releases use `x.y.z`; beta releases use `x.y.z-beta.N`.
 
+## [1.4.0-beta.3] - 2026-11-18
+
+### Changed
+
+- Removed the stream characteristics block from the radio playback panel.
+
 ## [1.4.0-beta.2] - 2026-11-18
 
 ### Added

@@ -38,7 +38,7 @@ For local builds and publishing, see [RELEASE.md](RELEASE.md). Version history i
 
 ### Start listening
 
-For radio, select **This computer (Windows)** or a network receiver, then choose a station from the list on the right. Press the same station again to stop. Choosing another station stops the previous one. The playback panel shows the connection status, available track metadata and audio stream details.
+For radio, select **This computer (Windows)** or a network receiver, then choose a station from the list on the right. Press the same station again to stop. Choosing another station stops the previous one. The playback panel shows the connection status and available track metadata.
 
 For local playback, use the **Windows volume** slider under **This computer**. It controls the overall Windows output volume for all applications and works before playback starts. The slider reflects system volume changes and preserves the Windows mute setting. Radio tracks with an artist and title can be sent to Last.fm after connecting your account. MusicBrainz is not used.
 
@@ -177,7 +177,7 @@ SonaRelay — приложение для Windows, с которым можно 
 
 ### Как начать слушать
 
-Для радио выберите **«Этот компьютер (Windows)»** или сетевой приёмник, затем выберите станцию в списке справа. Повторное нажатие той же кнопки останавливает поток. Выбор другой станции завершает предыдущую трансляцию. Панель воспроизведения показывает состояние подключения, доступные метаданные композиции и характеристики потока.
+Для радио выберите **«Этот компьютер (Windows)»** или сетевой приёмник, затем выберите станцию в списке справа. Повторное нажатие той же кнопки останавливает поток. Выбор другой станции завершает предыдущую трансляцию. Панель воспроизведения показывает состояние подключения и доступные метаданные композиции.
 
 При прослушивании на компьютере используйте ползунок **«Громкость Windows»** в блоке **«Этот компьютер»**. Он меняет общую громкость выхода Windows для всех приложений и работает до запуска воспроизведения. Ползунок отражает изменения системной громкости и сохраняет состояние отключённого звука Windows. Композиции радио с известными исполнителем и названием можно отправлять в Last.fm после подключения аккаунта. MusicBrainz не используется.
 

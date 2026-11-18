@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from 'vue';
+import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { radioStations, radioOutputInfo } from '../../../shared/radio';
-import type { LiveState } from '../../../shared/types';
-import RadioStreamDetails from './RadioStreamDetails.vue';
+import { radioStations } from '../../../shared/radio';
 import NowPlaying from './NowPlaying.vue';
 import { useRadio } from '../stores/radio';
 import { useDevices } from '../stores/devices';
@@ -13,10 +11,6 @@ import { useReceiverVolume } from '../stores/receiver-volume';
 const receiverVolume=useReceiverVolume();
 const {t}=useI18n();
 const radio=useRadio(),devices=useDevices();
-const live=ref<LiveState>();
-const stopLive=ipc.onLiveState(state=>{live.value=state;});
-onUnmounted(stopLive);
-const outputInfo=computed(()=>radio.active?radioOutputInfo(radio.state.outputId,live.value):null);
 const error=ref('');
 async function toggle(id:string){
   error.value='';
@@ -46,7 +40,6 @@ async function toggle(id:string){
    <NowPlaying />
    <div v-if="radio.state.mode==='radio'||error||radio.state.error" class="radio-details">
     <p v-if="radio.state.mode==='radio'" role="status">{{ t('radio.status.'+radio.state.status) }}</p>
-    <RadioStreamDetails v-if="radio.state.mode==='radio'&&(radio.active||radio.state.stream)" :stream="radio.state.stream??null" :output="outputInfo" />
     <p v-if="error||radio.state.error" class="error" role="alert">{{ t(error||radio.state.error) }}</p>
    </div>
   </div>
