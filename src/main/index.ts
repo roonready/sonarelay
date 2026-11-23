@@ -1,65 +1,33 @@
-import { app, BrowserWindow, WebContentsView, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'node:path';
 import { Discovery } from './discovery/ssdp';
 import { registerHandlers } from './ipc/handlers';
 import { configureBackgroundAudio } from './runtime/background-audio';
-import { registerMetadata } from './metadata/ipc';
+import { loopbackSampleRate, registerWindowsMedia } from './runtime/windows-media';
 import { registerLastfm } from './lastfm/ipc';
 import { registerUpdates } from './updates/ipc';
 import { configureProfile } from './runtime/profile';
 configureBackgroundAudio(app.commandLine);
-const PANEL_WIDTH = 300;
 const profile = configureProfile(app);
 function createWindow() {
   const window = new BrowserWindow({
-    width: 1500, height: 900, minWidth: 950, minHeight: 600,
+    width: 320, height: 520, minWidth: 270, minHeight: 300,
+    alwaysOnTop: true, maximizable: false,
     title: 'SonaRelay', icon: path.join(app.getAppPath(), 'assets/icon.png'), backgroundColor: '#11151e', autoHideMenuBar: true,
     show: false,
     webPreferences: { preload: path.join(__dirname, '../preload/index.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling:false },
   });
   window.once('ready-to-show', () => {
-    window.maximize();
     window.show();
   });
-  let browser: WebContentsView | undefined;
-  let cleanupMetadata = () => {};
-  let musicTask: Promise<void> | undefined;
   const lastfm=registerLastfm(window.webContents,profile.credentialsFallback);
-  const captureSession = window.webContents.session;
-  captureSession.setDisplayMediaRequestHandler((request, callback) => {
-    if (window.isDestroyed() || !browser || browser.webContents.isDestroyed() || request.frame !== window.webContents.mainFrame || !request.audioRequested) {
-      callback(null); return;
-    }
-    // Suppress local speakers while preserving this tab's captured audio for DLNA.
-    callback({ video: browser.webContents.mainFrame, audio: browser.webContents.mainFrame, enableLocalEcho: false });
-  });
-  captureSession.setPermissionRequestHandler((contents, permission, callback) => {
-    callback(contents === window.webContents && permission === 'display-capture');
-  });
-  const layout = () => {
-    const [width, height] = window.getContentSize();
-    browser?.setBounds({ x: PANEL_WIDTH, y: 0, width: Math.max(0, width - PANEL_WIDTH), height });
-  };
-  layout(); window.on('resize', layout);
-  const closeMusic = () => {
-    cleanupMetadata(); cleanupMetadata=()=>{};
-    const current=browser;browser=undefined;musicTask=undefined;
-    if(current){window.contentView.removeChildView(current);if(!current.webContents.isDestroyed())current.webContents.close();}
-  };
-  const openMusic = ():Promise<void> => {
-    if(browser&&!browser.webContents.isDestroyed())return musicTask??Promise.resolve();
-    const view=browser=new WebContentsView({webPreferences:{partition:'persist:yandex-music',contextIsolation:true,nodeIntegration:false,sandbox:true,backgroundThrottling:false}});
-    window.contentView.addChildView(view);layout();
-    view.webContents.setWindowOpenHandler(({url})=>{if(url.startsWith('https://'))void view.webContents.loadURL(url).catch(console.error);return {action:'deny'};});
-    view.webContents.on('will-navigate',(event,url)=>{if(!url.startsWith('https://'))event.preventDefault();});
-    cleanupMetadata=registerMetadata(window.webContents,view.webContents,lastfm.consume);
-    musicTask=view.webContents.loadURL('https://music.yandex.ru/').catch(error=>{if(browser===view)closeMusic();throw error;});
-    return musicTask;
-  };
+  const media = registerWindowsMedia(window.webContents, lastfm.consume);
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', event => event.preventDefault());
   const discovery = new Discovery();
-  const cleanup = registerHandlers(window, discovery,{openMusic,closeMusic,onRadioPlayback:playback=>lastfm.consume({source:'radio',fields:[],artwork:null,updatedAt:Date.now(),error:'',playback})});
+  const cleanup = registerHandlers(window, discovery, {
+    capture: media.capture, sampleRate: loopbackSampleRate,
+  });
   const ready = process.env.ELECTRON_RENDERER_URL
     ? window.loadURL(process.env.ELECTRON_RENDERER_URL)
     : window.loadFile(path.join(__dirname, '../renderer/index.html'));
@@ -69,11 +37,12 @@ function createWindow() {
   const shutdown = () => {
     if (shutdownTask) return shutdownTask;
     closing=true;
-    closeMusic();
     const lastfmShutdown=lastfm.dispose();
-    captureSession.setDisplayMediaRequestHandler(null);
-    captureSession.setPermissionRequestHandler(null);
-    shutdownTask=cleanup().then(()=>discovery.dispose(),async error=>{await discovery.dispose();throw error;}).then(()=>lastfmShutdown);
+    const metadataShutdown=media.dispose();
+    shutdownTask=Promise.allSettled([cleanup(), lastfmShutdown, metadataShutdown]).then(async results=>{
+      await discovery.dispose();
+      for (const result of results) if (result.status==='rejected') throw result.reason;
+    });
     return shutdownTask;
   };
   const updates=registerUpdates(window,async()=>{await shutdown().catch(error=>console.error('Shutdown:',error));shutdownComplete=true;});
@@ -87,7 +56,6 @@ function createWindow() {
     event.preventDefault();
     if(closing)return;
     void shutdown().catch(error=>console.error('Shutdown:',error)).finally(()=>{
-      closeMusic();
       shutdownComplete=true;
       if(!window.isDestroyed())window.close();
     });

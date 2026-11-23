@@ -42,7 +42,7 @@ export class AirplayOutput extends EventEmitter {
   await new Promise<void>((resolve,reject)=>{socket.once('error',reject);socket.bind(0,this.address,()=>{socket.removeListener('error',reject);resolve();});});
   return socket;
  }
- async prepare(engine:AudioEngine){
+ async prepare(engine:AudioEngine, title = 'SonaRelay Live'){
   if(this.device.airplayPairingRequired)throw new Error(runtimeMessage('runtime005'));
   const ap=airplayLibrary();
   const identity=createHash('sha256').update('SonaRelay:'+os.hostname()).digest().subarray(0,8);
@@ -70,7 +70,7 @@ export class AirplayOutput extends EventEmitter {
    const stream=await ap.setupRealtimeStream(connection.rtsp,connection.sessionUrl,{audioKey:connection.hap.sharedSecret,localDataPort:dataPort,localControlPort:controlPort,streamConnectionId:Date.now()%0x7fffffff});
    this.ensureOpen();
    this.sender=new ap.RealtimeSender({host:this.device.ip,dataPort:stream.dataPort,controlPort:stream.controlPort,audioKey:connection.hap.sharedSecret,ptp:this.ptp,timing:this.timing,leadMs:2000,onLog:message=>{if(/failed/i.test(message))this.emit('diagnostic',message);}},data,control);
-   await ap.setMetadata(connection.rtsp,connection.sessionUrl,{title:'Яндекс Музыка',artist:'SonaRelay'},this.sender.rtpPosition);
+   await ap.setMetadata(connection.rtsp,connection.sessionUrl,{title,artist:'SonaRelay'},this.sender.rtpPosition);
    this.ensureOpen();this.engine=engine;
    const child=spawn(ffmpegPath(),['-hide_banner','-loglevel','error','-f','s16le','-ar',String(engine.format.sampleRate),'-ac','2','-i','pipe:0','-ar','44100','-ac','2','-f','s16le','-flush_packets','1','pipe:1'],{windowsHide:true,stdio:['pipe','pipe','pipe']});
    this.resampler=child;

@@ -13,24 +13,15 @@ export interface DiscoveryState {
 }
 export interface WindowsVolumeState {volume:number;muted:boolean}
 export interface BridgeApi {
-  catalogSearch(artist:string,title:string):Promise<import('./music-catalog').CatalogTrack|null>;
-  catalogOpen(trackId:string,albumId?:string|null,provider?:import('./music-catalog').CatalogProvider):Promise<void>;
   windowsVolume(value?:number):Promise<WindowsVolumeState>;
   receiverVolume(deviceId:string,value?:number):Promise<{deviceId:string;volume:number}>;
-  musicConsent(): Promise<import('./music-consent').MusicConsentState>;
-  acceptMusicConsent(version: number): Promise<void>;
-  openSourceRepository(): Promise<void>;
-  radioState(): Promise<import('./radio').RadioState>;
-  radioToggle(stationId: string, outputId: string): Promise<import('./radio').RadioState>;
-  radioOutput(outputId: string): Promise<import('./radio').RadioState>;
-  openMusic(): Promise<import('./radio').RadioState>;
-  onRadioState(callback: (state: import('./radio').RadioState) => void): () => void;
   getUpdateState(): Promise<AppUpdateState>;
   checkUpdates(): Promise<AppUpdateState>;
   installUpdate(): Promise<void>;
   onUpdateState(callback: (state: AppUpdateState) => void): () => void;
   getSystemLanguage(): Promise<string>;
   lastfmState():Promise<LastfmState>;
+  lastfmOpenProfile():Promise<void>;
   lastfmConnect():Promise<LastfmState>;
   lastfmConfirm():Promise<LastfmState>;
   lastfmDisconnect():Promise<LastfmState>;
@@ -38,15 +29,10 @@ export interface BridgeApi {
   onLastfmState(callback:(state:LastfmState)=>void):()=>void;
   getMetadata():Promise<MusicMetadataSnapshot>;
   onMetadata(callback:(snapshot:MusicMetadataSnapshot)=>void):()=>void;
-  liveBegin(deviceId:string,sampleRate:number):Promise<LiveState>;
-  livePcm(sessionId:string,data:Uint8Array):Promise<void>;
+  liveBegin(deviceId:string):Promise<LiveState>;
   liveConnect(sessionId:string):Promise<LiveState>;
   liveStop(sessionId:string):Promise<void>;
   onLiveState(callback:(state:LiveState)=>void):()=>void;
-  captureBegin(sampleRate: number): Promise<void>;
-  capturePcm(data: Uint8Array): void;
-  captureFinish(): Promise<CaptureResult>;
-  playback(deviceId: string, command: PlaybackCommand, value?: number): Promise<PlaybackState>;
   getState(): Promise<DiscoveryState>;
   scan(address: string): Promise<DiscoveryState>;
   onState(callback: (state: DiscoveryState) => void): () => void;
@@ -60,27 +46,16 @@ export interface AppUpdateState {
   percent: number;
   error: 'updates.checkError' | 'updates.downloadError' | 'updates.installError' | '';
 }
-export type PlaybackCommand = 'test' | 'recording' | 'play' | 'pause' | 'stop' | 'status' | 'volume';
-export interface CaptureResult { path: string; sampleRate: number; channels: 2; bitDepth: 16; seconds: number; peak: number }
-export interface PlaybackState { deviceId: string; status: string; error: string; busy: boolean; volume: number | null; httpRequests: number }
+export type PlaybackCommand = 'play' | 'pause' | 'stop' | 'status' | 'volume';
 export interface LiveState { playbackReady?:boolean; encoding?:'flac'|'mp3'|'alac'; packets?:number; timingExchanges?:number; underruns?:number; volume:number|null; sessionId:string; deviceId:string; active:boolean; connected:boolean; status:string; error:string; sampleRate:number; pcmBytes:number; encodedBytes:number; connections:number; httpRequests:number }
-export interface MusicMetadataField {
- id:string;
- label:string;
- value:string|null;
- source:string|null;
- detail:string;
-}
 export interface MusicMetadataSnapshot {
- source?:'music'|'radio';
  playback?:MusicPlaybackSnapshot;
- fields:MusicMetadataField[];
  artwork:string|null;
  updatedAt:number;
  error:string;
 }
 export interface MusicPlaybackSnapshot {
- source?:'music'|'radio';sourceId?:string;
+ sourceId?:string;
  title:string;artist:string;album:string;trackId:string;
  duration:number|null;position:number|null;playing:boolean;rate:number;
 }

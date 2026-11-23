@@ -1,3 +1,4 @@
+const {PcmFixture}=require('./pcm-fixture.cjs');
 ﻿require('./register-ts.cjs');
 const {Discovery}=require('../src/main/discovery/ssdp.ts');
 const {LiveSession}=require('../src/main/audio/live-session.ts');
@@ -10,7 +11,7 @@ discovery.on('state',async state=>{
   const device=state.devices.find(d=>d.ip===target);if(!device)throw new Error('Приёмник не обнаружен');
   live=new LiveSession(()=>state.selectedAddress);
   live.on('state',s=>{if(s.error)console.error('LIVE ERROR',s.error);});
-  const session=await live.begin(device,state.selectedAddress,48000);
+  const source=new PcmFixture();await live.begin(device,state.selectedAddress,48000,{source,title:'SonaRelay test tone'});
   let frame=0;
   const feed=()=>{
    const pcm=Buffer.alloc(1920*4);
@@ -20,7 +21,7 @@ discovery.on('state',async state=>{
     const sample=seconds>=4&&seconds<6?0:Math.round(Math.sin(frame*2*Math.PI*frequency/48000)*500);
     pcm.writeInt16LE(sample,i*4);pcm.writeInt16LE(sample,i*4+2);
    }
-   live.push(session.sessionId,pcm);
+   source.push(pcm);
   };
   feed();timer=setInterval(feed,40);
   console.log('START',JSON.stringify(await live.connect(session.sessionId)));

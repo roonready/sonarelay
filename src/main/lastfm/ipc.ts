@@ -19,6 +19,11 @@ export function registerLastfm(ui:WebContents,credentialsFallback?:string){
   channels.push(name);ipcMain.handle(name,async(event,...args)=>{if(closed||event.sender!==ui)throw new Error('Forbidden');await ready;if(closed||!service)throw new Error(runtimeMessage('runtime109'));return callback(service,...args);});
  };
  handle('lastfm:get',service=>service.snapshot());handle('lastfm:connect',service=>service.connect());handle('lastfm:confirm',service=>service.confirm());handle('lastfm:disconnect',service=>service.disconnect());
+ handle('lastfm:open-profile',async service=>{
+  const {connected,username}=service.snapshot();
+  if(!connected||!username)return;
+  await shell.openExternal('https://www.last.fm/user/'+encodeURIComponent(username));
+ });
  handle('lastfm:settings',(service,preferences:LastfmPreferences)=>{
   if(!preferences||typeof preferences.scrobbling!=='boolean'||typeof preferences.nowPlaying!=='boolean'||Object.keys(preferences).some(key=>!['scrobbling','nowPlaying'].includes(key)))throw new Error(runtimeMessage('runtime110'));
   return service.preferences({scrobbling:preferences.scrobbling,nowPlaying:preferences.nowPlaying});

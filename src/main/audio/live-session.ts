@@ -5,14 +5,13 @@ import { interfaces } from '../network/interfaces';
 import { receiverController, type ReceiverController } from '../receivers/controller';
 import { readVolume } from '../receivers/volume';
 import { AudioEngine } from './audio-engine';
-import { YandexMusicSource } from './yandex-source';
 import type { AudioSource } from './audio-source';
 import { AirplayOutput } from '../airplay2/output';
 import { LiveServer } from '../media-server/live-server';
 import type { RendererDevice, LiveState, PlaybackCommand } from '../../shared/types';
 export class LiveSession extends EventEmitter {
  private source?:AudioSource;
- private streamTitle='Яндекс Музыка — SonaRelay Live';
+ private streamTitle='SonaRelay Live';
  private engine?:AudioEngine;
  private server?:LiveServer;
  private airplay?:AirplayOutput;
@@ -55,11 +54,11 @@ export class LiveSession extends EventEmitter {
   if(this.airplay){this.state.packets=this.airplay.packets;this.state.timingExchanges=this.airplay.timingExchanges;this.state.underruns=this.airplay.underruns;}
   this.emit('state',{...this.state});
  }
- async begin(device:RendererDevice,address:string,sampleRate:number,input?:{source:AudioSource;title:string}):Promise<LiveState>{
+ async begin(device:RendererDevice,address:string,sampleRate:number,input:{source:AudioSource;title:string}):Promise<LiveState>{
   if(this.commandBusy)throw new Error(runtimeMessage('runtime028'));
   await this.stop();
-  const source=input?.source??new YandexMusicSource();
-  this.streamTitle=input?.title??'Яндекс Музыка — SonaRelay Live';
+  const source=input.source;
+  this.streamTitle=input.title;
   const engine=new AudioEngine(source,{sampleRate,channels:2,bitDepth:16});
   const server=new LiveServer();
   this.source=source;this.engine=engine;this.server=device.protocol==='airplay2'?undefined:server;this.controller=device.protocol==='airplay2'?undefined:receiverController(device,address);
@@ -69,7 +68,7 @@ export class LiveSession extends EventEmitter {
   this.state={playbackReady:false,encoding,volume:null,sessionId:randomBytes(16).toString('hex'),deviceId:device.id,active:true,connected:false,status:runtimeMessage('runtime029', {p0: encoding.toUpperCase()}),error:'',sampleRate,pcmBytes:0,encodedBytes:0,connections:0,httpRequests:0};
   try {
    await engine.start();
-   if(this.airplay){const output=this.airplay;output.on('failure',message=>{if(this.airplay===output)void this.fail(message);});await output.prepare(engine);}
+   if(this.airplay){const output=this.airplay;output.on('failure',message=>{if(this.airplay===output)void this.fail(message);});await output.prepare(engine,this.streamTitle);}
    else this.url=await server.start(address,device.ip,engine,encoding==='alac'?'flac':encoding);
    server.on('client-error',message=>{this.state.error=message;this.publish();});
    server.on('server-error',message=>{void this.fail(message);});
@@ -82,12 +81,6 @@ export class LiveSession extends EventEmitter {
    },1000);
    this.publish();return {...this.state};
   }catch(error){await this.stop();throw error;}
- }
- push(sessionId:string,data:Uint8Array){
-  if(!this.state.active||this.state.sessionId!==sessionId)throw new Error(runtimeMessage('runtime032'));
-  if(!(data instanceof Uint8Array)||data.byteLength>65536||data.byteLength%4||!data.byteLength)throw new Error(runtimeMessage('runtime033'));
-  if(!(this.source instanceof YandexMusicSource))throw new Error(runtimeMessage('runtime033'));
-  this.lastInput=Date.now();this.source.push(Buffer.from(data));
  }
  async connect(sessionId:string){
   if(this.commandBusy)throw new Error(runtimeMessage('runtime034'));

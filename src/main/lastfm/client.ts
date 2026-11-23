@@ -32,11 +32,6 @@ export class LastfmClient {
   const signed={...parameters,method,api_key:this.apiKey};
   return this.transport(['track.scrobble','track.updateNowPlaying'].includes(method)?'POST':'GET',{...signed,api_sig:lastfmSignature(signed,this.secret),format:'json'},signal);
  }
- async duration(artist:string,title:string,signal?:AbortSignal):Promise<number|null>{
-  const result=await this.call('track.getInfo',{artist,track:title,autocorrect:'0'},signal);
-  const milliseconds=Number(result?.track?.duration);
-  return Number.isFinite(milliseconds)&&milliseconds>0&&milliseconds<=86400000?milliseconds/1000:null;
- }
  async token(signal?:AbortSignal):Promise<string>{
   const result=await this.call('auth.getToken',{},signal);
   if(typeof result?.token!=='string'||!/^\w{16,128}$/.test(result.token)){

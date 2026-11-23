@@ -81,7 +81,7 @@ npm.cmd run dist:unpacked
 
 The update flow is intended for NSIS-installed builds. Development runs do not check for updates.
 
-Development uses `%APPDATA%\sonarelay-dev`, while installed builds keep `%APPDATA%\sonarelay`. Chromium sessions and caches are separate, so running both does not make them share locked browser files. Each profile allows one running instance. Development can read the installed profile's Last.fm application keys as a fallback; its authorization session and browser logins remain separate. An explicit `--user-data-dir` is respected and does not use production credentials as a fallback.
+Development uses `%APPDATA%\sonarelay-dev`, while installed builds keep `%APPDATA%\sonarelay`. Chromium sessions and caches are separate, so running both does not make them share locked browser files. Each profile allows one running instance. Development can read the installed profile's Last.fm application keys as a fallback; its Last.fm authorization session remains separate. An explicit `--user-data-dir` is respected and does not use production credentials as a fallback.
 
 ## Publish an update
 

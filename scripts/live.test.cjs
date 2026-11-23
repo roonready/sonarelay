@@ -5,7 +5,7 @@ const http=require('node:http');
 const {spawnSync}=require('node:child_process');
 const ffmpeg=require('ffmpeg-static');
 const {AudioEngine}=require('../src/main/audio/audio-engine.ts');
-const {YandexMusicSource}=require('../src/main/audio/yandex-source.ts');
+const {PcmFixture}=require('./pcm-fixture.cjs');
 const {LiveServer}=require('../src/main/media-server/live-server.ts');
 const {didl}=require('../src/main/dlna/didl.ts');
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -19,7 +19,7 @@ function connect(url){
 }
 async function waitFor(check,timeout=7000){const start=Date.now();while(!check()){if(Date.now()-start>timeout)throw new Error('Timeout');await sleep(20);}}
 test('PCM history is bounded to 250 ms and rejects malformed chunks',async()=>{
- const source=new YandexMusicSource(),engine=new AudioEngine(source,{sampleRate:48000,channels:2,bitDepth:16});
+ const source=new PcmFixture(),engine=new AudioEngine(source,{sampleRate:48000,channels:2,bitDepth:16});
  await engine.start();
  try{
   for(let i=0;i<1000;i++)source.push(Buffer.alloc(16384));
@@ -28,7 +28,7 @@ test('PCM history is bounded to 250 ms and rejects malformed chunks',async()=>{
  }finally{await engine.stop();}
 });
 test('live FLAC reconnects with its own header, preserves PCM and closes encoders',async()=>{
- const source=new YandexMusicSource(),engine=new AudioEngine(source,{sampleRate:48000,channels:2,bitDepth:16});
+ const source=new PcmFixture(),engine=new AudioEngine(source,{sampleRate:48000,channels:2,bitDepth:16});
  const server=new LiveServer();let feed,first,second;
  const errors=[];server.on('client-error',e=>errors.push(e));
  await engine.start();

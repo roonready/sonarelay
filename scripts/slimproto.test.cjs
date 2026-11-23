@@ -2,7 +2,7 @@ require('./register-ts.cjs');
 const {test}=require('node:test'),assert=require('node:assert/strict'),net=require('node:net'),http=require('node:http');
 const {SlimBridge,slimPlayer,slimDiscoveryReply}=require('../src/main/slimproto/server.ts');
 const {SlimController}=require('../src/main/slimproto/controller.ts');
-const {AudioEngine}=require('../src/main/audio/audio-engine.ts');const {YandexMusicSource}=require('../src/main/audio/yandex-source.ts');const {LiveServer}=require('../src/main/media-server/live-server.ts');
+const {AudioEngine}=require('../src/main/audio/audio-engine.ts');const {PcmFixture}=require('./pcm-fixture.cjs');const {LiveServer}=require('../src/main/media-server/live-server.ts');
 const wait=async check=>{const deadline=Date.now()+4000;while(!check()){if(Date.now()>deadline)throw new Error('timeout');await new Promise(r=>setTimeout(r,10));}};
 function frame(op,data){const length=Buffer.alloc(4);length.writeUInt32BE(data.length);return Buffer.concat([Buffer.from(op),length,data]);}
 function helo(){const b=Buffer.alloc(36);b[0]=12;Buffer.from('021122334455','hex').copy(b,2);return frame('HELO',Buffer.concat([b,Buffer.from('Model=Squeezelite,MaxSampleRate=192000,flc,pcm,mp3')]));}
@@ -10,7 +10,7 @@ test('SlimProto discovery advertises SonaRelay, rejects truncated TLVs, omits no
  const reply=slimDiscoveryReply(Buffer.from('eNAME\0JSON\0VERS\0IPAD\0'),'192.168.1.14');assert.ok(reply.includes(Buffer.from('SonaRelay')));assert.ok(reply.includes(Buffer.from('192.168.1.14')));assert.ok(!reply.includes(Buffer.from('JSON')));assert.equal(slimDiscoveryReply(Buffer.from('eNAME\x05bad'),'192.168.1.14'),undefined);
 });
 test('real SlimProto handshake and FLAC HTTP stream, transport and cleanup without volume writes',async()=>{
- const bridge=new SlimBridge(0),source=new YandexMusicSource(),engine=new AudioEngine(source,{sampleRate:48000,channels:2,bitDepth:16}),server=new LiveServer();let socket,timer,request,response;const frames=[];let chunks=[];let errors=[];bridge.on('diagnostic',e=>errors.push(e));
+ const bridge=new SlimBridge(0),source=new PcmFixture(),engine=new AudioEngine(source,{sampleRate:48000,channels:2,bitDepth:16}),server=new LiveServer();let socket,timer,request,response;const frames=[];let chunks=[];let errors=[];bridge.on('diagnostic',e=>errors.push(e));
  try{
   await bridge.start('127.0.0.1','255.0.0.0');socket=net.connect(bridge.port,'127.0.0.1');socket.on('error',()=>{});let incoming=Buffer.alloc(0);
   socket.on('data',data=>{incoming=Buffer.concat([incoming,data]);while(incoming.length>=2){const n=incoming.readUInt16BE(0);if(incoming.length<n+2)break;const packet=incoming.subarray(2,n+2);incoming=incoming.subarray(n+2);const op=packet.toString('ascii',0,4),body=packet.subarray(4);frames.push({op,body:Buffer.from(body)});

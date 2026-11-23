@@ -2,13 +2,20 @@
 
 Versions follow Semantic Versioning. Stable releases use `x.y.z`; beta releases use `x.y.z-beta.N`.
 
+## [1.4.0-beta.6] - 2026-11-23
+
+- Compact always-on-top receiver panel with track, artist and artwork from Windows GSMTC.
+- WASAPI Process Loopback captures PCM from the source process tree for network relay.
+- Last.fm tracks listening progress from the GSMTC timeline.
+- The panel starts at 320 × 520 and discovers receivers through an automatically selected network interface.
+- A connected Last.fm account gets a profile link directly below the current track.
+
 ## [1.4.0-beta.5] - 2026-11-18
 
 ### Fixed
 
 - Keep the selected volume slider position while dragging and while the output confirms the change.
 - Remove horizontal scrolling from the volume controls.
-- Keep active radio playback on the selected network receiver when it temporarily disappears from discovery.
 
 ## [1.4.0-beta.4] - 2026-11-18
 
@@ -16,98 +23,41 @@ Versions follow Semantic Versioning. Stable releases use `x.y.z`; beta releases 
 
 - Compact left sidebar on short windows, with scrolling confined to individual sections when needed.
 
-## [1.4.0-beta.3] - 2026-11-18
-
-### Changed
-
-- Removed the stream characteristics block from the radio playback panel.
-
 ## [1.4.0-beta.2] - 2026-11-18
 
-### Added
-
-- A scrollable catalog of 160 radio stations that returned non-empty ICY metadata during testing.
-- Deezer track lookup when Yandex Music returns no match, with artwork, album information and a link to the matched track.
-
 ### Changed
 
-- Radio station controls and current playback details now appear side by side on the right.
 - The track card shows the catalog provider separately from the album label.
-
-## [1.4.0-beta.1] - 2026-11-17
-
-### Added
-
-- A right-hand now-playing card with artist, track, album artwork and available artist photo from the Yandex Music catalog, based on the station's artist/title metadata.
-- An Open in Yandex Music link for the matched track and album, opening in the default external browser.
-- Cached public catalog search with artist/title/version matching, cancellation of obsolete requests and fallback states for missing metadata, artwork or catalog matches. Image URI templates are expanded to HTTPS images with explicit sizes.
 
 ## [1.3.0] - 2026-11-17
 
 ### Added
 
 - A Windows master-volume slider for local output, available before playback and refreshed when the system volume changes. Existing mute state is preserved.
-- Collapsible radio stream details: source codec, sample rate, channels, bit depth and known bitrate, shown separately from the output encoding. Station-declared bitrate is labelled separately from actual stream data.
-
-### Fixed
-
-- Restored receiver volume controls during radio playback; the output panel is no longer limited to Yandex Music mode.
-- Receiver volume can be read and adjusted before starting a stream. Radio start waits while a volume request is pending; unknown values are shown explicitly.
 
 ### Changed
 
 - Selecting a supported output sets its volume to 10 before playback is allowed, including the Windows master volume for local output. Starting a stream preserves subsequent manual volume adjustments; discovery refreshes do not reset them.
 
-## [1.2.1] - 2026-11-17
-
-### Changed
-
-- Removed the Yandex Music button from the interface. The source panel now contains only Наше Радио and Radio Calico.
-- Updated UI smoke checks for the two radio buttons.
-
 ## [1.2.0] - 2026-11-16
 
 ### Added
 
-- A versioned first-use Yandex Music sign-in notice, with local acknowledgment, session-storage information and cancellation before switching sources.
 - Separate local `release:beta` and `release:stable` publishing commands with version/channel validation.
-- Direct internet radio sources: Наше Радио and Radio Calico, each with its own start/stop button.
-- Streaming HTTP redirects, optional ICY metadata, bounded PCM decoding using the bundled FFmpeg, and native Windows audio output through WinMM.
-- Radio output through the existing network receiver pipeline, with no additional media server.
-- Tests for redirects, interrupted streams, cancellation, station switching, native playback and the real application buttons.
-- Radio Now Playing and scrobbling through the shared Last.fm service, with catalog duration lookup, a four-minute fallback for unknown radio durations, and visible accepted-submission status.
 
 ### Changed
 
 - Development and installed builds use separate Chromium profiles; a second launch of the same profile focuses the existing window instead of sharing its cache.
-- Yandex Music now opens only when its source button is selected. Radio playback does not create an embedded music browser or require browser cookies.
-- Radio and Yandex Music share Last.fm settings and submission handling. MusicBrainz is not used.
-
-### Validation
-
-- Real native playback and application button tests were performed on Windows 11. Windows 10 compatibility still requires a separate machine test.
 
 ## [1.2.0-beta.1] - 2026-11-16
 
 ### Added
 
-- A versioned first-use Yandex Music sign-in notice, with local acknowledgment, session-storage information and cancellation before switching sources.
 - Separate local `release:beta` and `release:stable` publishing commands with version/channel validation.
-- Direct internet radio sources: Наше Радио and Radio Calico, each with its own start/stop button.
-- Streaming HTTP redirects, optional ICY metadata, bounded PCM decoding using the bundled FFmpeg, and native Windows audio output through WinMM.
-- Radio output through the existing network receiver pipeline, with no additional media server.
-- Tests for redirects, interrupted streams, cancellation, station switching, native playback and the real application buttons.
-- Radio Now Playing and scrobbling through the shared Last.fm service, with catalog duration lookup, a four-minute fallback for unknown radio durations, and visible accepted-submission status.
 
 ### Changed
 
 - Development and installed builds use separate Chromium profiles; a second launch of the same profile focuses the existing window instead of sharing its cache.
-- Yandex Music now opens only when its source button is selected. Radio playback does not create an embedded music browser or require browser cookies.
-- Radio and Yandex Music share Last.fm settings and submission handling. MusicBrainz is not used.
-
-### Validation
-
-- Real native playback and application button tests were performed on Windows 11. Windows 10 compatibility still requires a separate machine test.
 
 ## [1.1.1-beta.1] - 2026-11-16
 

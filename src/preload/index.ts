@@ -1,21 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { BridgeApi, DiscoveryState, LiveState, MusicMetadataSnapshot, LastfmState, AppUpdateState } from '../shared/types';
 const api: BridgeApi = {
-  catalogSearch:(artist,title)=>ipcRenderer.invoke('catalog:search',artist,title),
-  catalogOpen:(id,albumId,provider)=>ipcRenderer.invoke('catalog:open',id,albumId,provider),
   windowsVolume:value=>ipcRenderer.invoke('windows:volume',value),
   receiverVolume:(id,value)=>ipcRenderer.invoke('receiver:volume',id,value),
-  musicConsent:()=>ipcRenderer.invoke('music-consent:get'),
-  acceptMusicConsent:version=>ipcRenderer.invoke('music-consent:accept',version),
-  openSourceRepository:()=>ipcRenderer.invoke('source:repository'),
-  radioState:()=>ipcRenderer.invoke('radio:get'),
-  radioToggle:(id,output)=>ipcRenderer.invoke('radio:toggle',id,output),
-  radioOutput:output=>ipcRenderer.invoke('radio:output',output),
-  openMusic:()=>ipcRenderer.invoke('source:music'),
-  onRadioState:callback=>{
-    const listener=(_event:Electron.IpcRendererEvent,state:import('../shared/radio').RadioState)=>callback(state);
-    ipcRenderer.on('radio:state',listener);return ()=>ipcRenderer.removeListener('radio:state',listener);
-  },
   getUpdateState:()=>ipcRenderer.invoke('updates:get'),
   checkUpdates:()=>ipcRenderer.invoke('updates:check'),
   installUpdate:()=>ipcRenderer.invoke('updates:install'),
@@ -25,6 +12,7 @@ const api: BridgeApi = {
   },
   getSystemLanguage:()=>ipcRenderer.invoke('app:system-language'),
   lastfmState:()=>ipcRenderer.invoke('lastfm:get'),
+  lastfmOpenProfile:()=>ipcRenderer.invoke('lastfm:open-profile'),
   lastfmConnect:()=>ipcRenderer.invoke('lastfm:connect'),
   lastfmConfirm:()=>ipcRenderer.invoke('lastfm:confirm'),
   lastfmDisconnect:()=>ipcRenderer.invoke('lastfm:disconnect'),
@@ -39,8 +27,7 @@ const api: BridgeApi = {
     ipcRenderer.on('metadata:state',listener);
     return ()=>ipcRenderer.removeListener('metadata:state',listener);
   },
-  liveBegin:(id,rate)=>ipcRenderer.invoke('live:begin',id,rate),
-  livePcm:(id,data)=>ipcRenderer.invoke('live:pcm',id,data),
+  liveBegin:id=>ipcRenderer.invoke('live:begin',id),
   liveConnect:id=>ipcRenderer.invoke('live:connect',id),
   liveStop:id=>ipcRenderer.invoke('live:stop',id),
   onLiveState:callback=>{
@@ -48,10 +35,6 @@ const api: BridgeApi = {
     ipcRenderer.on('live:state',listener);
     return ()=>ipcRenderer.removeListener('live:state',listener);
   },
-  captureBegin: sampleRate => ipcRenderer.invoke('capture:begin', sampleRate),
-  capturePcm: data => ipcRenderer.send('capture:pcm', data),
-  captureFinish: () => ipcRenderer.invoke('capture:finish'),
-  playback: (deviceId, command, value) => ipcRenderer.invoke('playback:command', deviceId, command, value),
   getState: () => ipcRenderer.invoke('discovery:state'),
   scan: address => ipcRenderer.invoke('discovery:scan', address),
   onState: callback => {
