@@ -81,6 +81,8 @@ try {
                 $result = @{sourceId=$selected.SourceAppUserModelId; artist=[string]$media.Artist;
                     title=[string]$media.Title; album=[string]$media.AlbumTitle; playing=$playing;
                     position=$position; duration=$duration; rate=$rate; artwork=$art}
+                if (-not [string]::IsNullOrWhiteSpace($media.AlbumArtist)) { $result.albumArtist = [string]$media.AlbumArtist }
+                if ($media.TrackNumber -gt 0) { $result.trackNumber = [long]$media.TrackNumber }
             } catch {
                 $result = @{sourceId=$selected.SourceAppUserModelId; artist=''; title=''; album='';
                     playing=$playing; position=$null; duration=$null; rate=$rate; artwork=$null}

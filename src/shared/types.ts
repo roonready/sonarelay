@@ -57,6 +57,7 @@ export interface MusicMetadataSnapshot {
 export interface MusicPlaybackSnapshot {
  sourceId?:string;
  title:string;artist:string;album:string;trackId:string;
+ albumArtist?:string;trackNumber?:number;
  duration:number|null;position:number|null;playing:boolean;rate:number;
 }
 export interface LastfmPreferences {scrobbling:boolean;nowPlaying:boolean}

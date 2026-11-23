@@ -2,6 +2,10 @@
 
 Versions follow Semantic Versioning. Stable releases use `x.y.z`; beta releases use `x.y.z-beta.N`.
 
+## [1.4.0-beta.9] - 2026-11-23
+
+- Include the album artist and track number in Last.fm Now Playing and scrobbles when Windows provides them.
+
 ## [1.4.0-beta.8] - 2026-11-23
 
 - Add a checkbox on the Windows installer finish page to launch SonaRelay after installation or update.

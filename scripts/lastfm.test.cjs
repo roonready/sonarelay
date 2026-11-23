@@ -40,6 +40,18 @@ test('Last.fm thresholds reject tracks <=30 seconds and unknown duration, cap lo
  const tracker=new LastfmTracker();assert.ok(!collect(tracker,239,{duration:1000}).some(e=>e.method==='track.scrobble'));
  assert.equal(tracker.observe(track(240,{duration:1000}),settings,240000,epoch+240000)[0].method,'track.scrobble');
 });
+test('Now Playing and scrobbles include valid GSMTC album artist and track number',()=>{
+ const events=collect(new LastfmTracker(),50,{albumArtist:' Various Artists ',trackNumber:4});
+ assert.deepEqual(events.map(event=>[event.method,event.parameters.albumArtist,event.parameters.trackNumber]),[
+  ['track.updateNowPlaying','Various Artists','4'],['track.scrobble','Various Artists','4']
+ ]);
+ for(const extra of [{},{albumArtist:' ',trackNumber:0},{trackNumber:1.5}]){
+  for(const event of collect(new LastfmTracker(),50,extra)){
+   assert.equal('albumArtist' in event.parameters,false);
+   assert.equal('trackNumber' in event.parameters,false);
+  }
+ }
+});
 test('pauses, frozen playback, seeks and long metadata gaps do not earn listening time',()=>{
  const tracker=new LastfmTracker();collect(tracker,10);
  for(let t=11;t<70;t++)tracker.observe(track(10,{playing:false}),settings,t*1000,epoch+t*1000);

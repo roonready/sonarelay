@@ -1,6 +1,6 @@
 {
   "name": "sonarelay",
-  "version": "1.4.0-beta.8",
+  "version": "1.4.0-beta.9",
   "description": "SonaRelay - Windows media monitor and network audio relay",
   "private": true,
   "main": "out/main/index.js",

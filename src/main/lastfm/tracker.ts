@@ -30,6 +30,10 @@ export class LastfmTracker {
   this.previous=position!==undefined?{position,at:now,playing:track.playing,rate}:undefined;
   const submissions:LastfmSubmission[]=[],parameters:Record<string,string>={artist:track.artist.trim().slice(0,1000),track:track.title.trim().slice(0,1000)};
   if(track.album?.trim())parameters.album=track.album.trim().slice(0,1000);
+  const albumArtist=track.albumArtist?.trim();
+  if(albumArtist)parameters.albumArtist=albumArtist.slice(0,1000);
+  const trackNumber=track.trackNumber;
+  if(typeof trackNumber==='number'&&Number.isSafeInteger(trackNumber)&&trackNumber>0)parameters.trackNumber=String(trackNumber);
   const duration=typeof track.duration==='number'&&Number.isFinite(track.duration)&&track.duration>0?track.duration:undefined;
   if(duration)parameters.duration=String(Math.floor(duration));
   if(settings.nowPlaying&&track.playing&&(progressed||position===undefined)&&!current.np){current.np=true;submissions.push({method:'track.updateNowPlaying',parameters:{...parameters}});}
