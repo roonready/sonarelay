@@ -26,11 +26,10 @@ const entries=asar.listPackage(archive).map(file=>file.replaceAll('\\','/'));
 if(entries.some(file=>/^\/(?:project-history\.md|lastfm-api\.json|\.env(?:\..*)?)$/.test(file)))throw new Error('Local configuration leaked into application');
 for(const file of ['LICENSE','NOTICE'])asar.statFile(archive,file);
 for(const file of ['process-loopback.ps1','ProcessLoopback.cs','gsmtc.ps1','media-process.ps1','windows-volume.ps1','WindowsVolume.cs'])if(!fs.statSync(path.join(root,'dist/win-unpacked/resources/native-audio',file)).isFile())throw new Error('Missing native audio helper');
-if(!main.includes('enableLocalEcho: false'))throw new Error('Local echo suppression absent');
+if(!main.includes('process-loopback.ps1')||!main.includes('gsmtc.ps1'))throw new Error('Windows media capture wiring missing');
 if(!main.includes('disable-renderer-backgrounding'))throw new Error('Background audio policy missing');
 if(!main.includes('prevent-app-suspension'))throw new Error('Playback power blocker missing');
 for(const file of ['out/preload/index.js','out/renderer/index.html'])asar.statFile(archive,path.normalize(file));
-if(!asar.listPackage(archive).some(file=>file.includes('pcm-worklet-')))throw new Error('Worklet missing');
 const binary=path.join(root,'dist/win-unpacked/resources/app.asar.unpacked/node_modules/ffmpeg-static/ffmpeg.exe');
 const result=spawnSync(binary,['-version'],{windowsHide:true,encoding:'utf8',timeout:5000});
 if(result.status!==0)throw new Error(result.stderr||'Packaged FFmpeg failed');
@@ -38,7 +37,7 @@ const check=spawnSync(await require('app-builder-lib/out/toolsets/7zip').getPath
 if(check.status!==0)throw new Error(check.stdout+'\n'+check.stderr);
 const hash=crypto.createHash('sha256').update(fs.readFileSync(installer)).digest('hex');
 fs.writeFileSync(installer+'.sha256',`${hash}  ${path.basename(installer)}\n`);
-console.log(JSON.stringify({installer,version:pkg.version,bytes:fs.statSync(installer).size,sha256:hash,archiveIntegrity:'OK',main:pkg.main,ffmpeg:result.stdout.split('\n')[0].trim(),localAudio:'disabled during capture'},null,2));
+console.log(JSON.stringify({installer,version:pkg.version,bytes:fs.statSync(installer).size,sha256:hash,archiveIntegrity:'OK',main:pkg.main,ffmpeg:result.stdout.split('\n')[0].trim(),capture:'WASAPI Process Loopback'},null,2));
 
 
 })().catch(error=>{console.error(error);process.exitCode=1;});
