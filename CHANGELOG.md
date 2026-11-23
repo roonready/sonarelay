@@ -2,6 +2,10 @@
 
 Versions follow Semantic Versioning. Stable releases use `x.y.z`; beta releases use `x.y.z-beta.N`.
 
+## [1.4.0-beta.8] - 2026-11-23
+
+- Add a checkbox on the Windows installer finish page to launch SonaRelay after installation or update.
+
 ## [1.4.0-beta.7] - 2026-11-23
 
 - Find BluOS players using mDNS and Lenbrook UDP discovery. Startup and manual scans also check the standard BluOS port on the selected /24 subnet.

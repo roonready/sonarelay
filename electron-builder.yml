@@ -41,7 +41,7 @@ nsis:
   createStartMenuShortcut: true
   shortcutName: SonaRelay
   deleteAppDataOnUninstall: false
-  runAfterFinish: false
+  runAfterFinish: true
   installerLanguages:
     - ru_RU
     - en_US
