@@ -4,17 +4,13 @@ import { SlimBridge } from '../slimproto/server';
 import { discoverAirplay2 } from '../airplay2/discovery';
 import dgram from 'node:dgram';
 import { EventEmitter } from 'node:events';
-import { interfaces } from '../network/interfaces';
+import { interfaces, sameSubnet } from '../network/interfaces';
 import { neighbors } from '../network/neighbors';
 import { parseDevice } from './device-parser';
 import { discoverBluos } from '../bluos/discovery';
 import { discoverCast } from '../cast/discovery';
 import type { DiscoveryState } from '../../shared/types';
 const GROUP = '239.255.255.250';
-function sameSubnet(ip: string, address: string, mask: string) {
-  const parts = ip.split('.').map(Number), local = address.split('.').map(Number), bits = mask.split('.').map(Number);
-  return parts.length === 4 && parts.every((p, i) => (p & bits[i]) === (local[i] & bits[i]));
-}
 export class Discovery extends EventEmitter {
   state: DiscoveryState = { diagnostics: { replies: 0, descriptions: 0, unicastPeers: 0 }, interfaces: interfaces(), selectedAddress: '', devices: [], scanning: false, error: '', lastScan: null };
   private socket?: dgram.Socket;
@@ -28,6 +24,7 @@ export class Discovery extends EventEmitter {
   private retries: NodeJS.Timeout[] = [];
   private airplayPending=false;
   private bluosPending=false;
+  private bluosScan?: AbortController;
   private castPending=false;
   private stopCast?:()=>void;
   private slim=new SlimBridge();
@@ -48,7 +45,7 @@ export class Discovery extends EventEmitter {
         this.state.selectedAddress = current.find(i => !i.virtual)?.address ?? '';
       }
       this.state.devices = this.state.devices.filter(d => d.expiresAt > Date.now());
-      if (this.state.selectedAddress && !this.state.scanning) void this.scan(this.state.selectedAddress);
+      if (this.state.selectedAddress && !this.state.scanning) void this.scan(this.state.selectedAddress, false);
       else if (changed) this.publish();
     }, 30000);
   }
@@ -58,6 +55,7 @@ export class Discovery extends EventEmitter {
     if (this.timer) clearTimeout(this.timer);
     this.retries.forEach(clearTimeout); this.retries = [];
     this.stopCast?.();this.stopCast=undefined;this.castPending=false;
+    this.bluosScan?.abort(); this.bluosScan = undefined;
     this.socket?.close(); this.socket = undefined;
     this.pending.clear(); this.seen.clear(); this.processed.clear(); this.finished = false; this.bluosPending=false;this.airplayPending=false;this.slimPending=false;
   }
@@ -67,12 +65,13 @@ export class Discovery extends EventEmitter {
     this.state.devices = this.state.devices.filter(d => this.seen.has(d.id) || d.expiresAt > Date.now());
     this.state.scanning = false; this.state.lastScan = Date.now(); this.publish();
   }
-  async scan(address: string): Promise<DiscoveryState> {
+  async scan(address: string, sweepBluos = true): Promise<DiscoveryState> {
     this.state.interfaces = interfaces();
     const selected = this.state.interfaces.find(i => i.address === address);
     if (!selected) { this.state.error = runtimeMessage('runtime075'); this.publish(); return this.state; }
     this.cancel();
     const generation = this.generation;
+    const checkSubnet = sweepBluos || !this.state.lastScan || address !== this.state.selectedAddress;
     if (address !== this.state.selectedAddress) this.state.devices = [];
     const slimAddress=this.state.diagnostics.slimAddress===address?address:undefined;
     const slimError=slimAddress?this.state.diagnostics.slimError:undefined;
@@ -102,11 +101,10 @@ export class Discovery extends EventEmitter {
       for(const device of devices){this.seen.add(device.id);this.state.devices=[...this.state.devices.filter(d=>d.id!==device.id),device].sort(compareReceivers);}this.publish();
     }).catch(()=>{}).finally(()=>{if(generation===this.generation){this.airplayPending=false;this.complete(generation);}});
     this.bluosPending=true;
-    void neighbors(address,selected.netmask).then(async peers=>{
-      if(generation!==this.generation)return;
-      const known=this.state.devices.filter(d=>d.protocol==='bluos').map(d=>d.ip);
-      const candidates=[...new Set([...peers,...known])].filter(ip=>sameSubnet(ip,address,selected.netmask));
-      const devices=await discoverBluos(candidates,address,()=>generation!==this.generation);
+    this.bluosScan = new AbortController();
+    const knownBluos = this.state.devices.filter(d => d.protocol === 'bluos').map(d => d.ip);
+    const bluosPeers = neighbors(address, selected.netmask).then(peers => [...knownBluos, ...peers], () => knownBluos);
+    void discoverBluos(bluosPeers, address, selected.netmask, this.bluosScan.signal, checkSubnet).then(devices=>{
       if(generation!==this.generation)return;
       this.state.diagnostics.bluosDevices=devices.length;
       for(const device of devices){
@@ -115,7 +113,7 @@ export class Discovery extends EventEmitter {
       }
       this.publish();
     }).catch(error=>{if(generation===this.generation){this.state.error=runtimeMessage('runtime077', {p0: error.message});this.publish();}})
-      .finally(()=>{if(generation===this.generation){this.bluosPending=false;this.complete(generation);}});
+      .finally(()=>{if(generation===this.generation){this.bluosScan=undefined;this.bluosPending=false;this.complete(generation);}});
     const socket = dgram.createSocket({ type: 'udp4', reuseAddr: true });
     this.socket = socket;
     const fail = (error: Error) => {

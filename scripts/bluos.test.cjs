@@ -2,9 +2,30 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const http=require('node:http');
-const {probeBluos}=require('../src/main/bluos/discovery.ts');
+const {bluosAdvertisements,probeBluos}=require('../src/main/bluos/discovery.ts');
 const {BluosController}=require('../src/main/bluos/controller.ts');
 const {bluosRequest}=require('../src/main/bluos/client.ts');
+const {lsdpPlayers}=require('../src/main/bluos/lsdp.ts');
+test('BluOS LSDP reads the advertised player port and rejects a truncated announcement',()=>{
+ const packet=Buffer.from('064c53445001644106905682af09c504c0a8011002000105046e616d65074b69746368656e04706f7274053131303030056d6f64656c04503230300776657273696f6e06342e382e3231027a730130000402046e616d65074b69746368656e04706f7274053131343331','hex');
+ assert.deepEqual(lsdpPlayers(packet),[{ip:'192.168.1.16',port:11000}]);
+ assert.deepEqual(lsdpPlayers(packet.subarray(0,-1)),[]);
+});
+test('BluOS mDNS resolves player and zone ports only on the selected subnet',()=>{
+ const srv=(name,target,port)=>({type:'SRV',name,data:{target,port}});
+ const a=(name,data)=>({type:'A',name,data});
+ const records=[
+  srv('Living Room._MUSC._TCP.LOCAL.','Player.LOCAL.',11000),
+  srv('Zone._musp._tcp.local','player.local',11001),
+  srv('Remote._musc._tcp.local','remote.local',11000),
+  srv('Other._http._tcp.local','player.local',80),
+  a('player.local','192.168.1.20'),
+  a('remote.local','192.168.2.20')
+ ];
+ assert.deepEqual(bluosAdvertisements(records,'192.168.1.10','255.255.255.0'),[
+  {ip:'192.168.1.20',port:11000},{ip:'192.168.1.20',port:11001}
+ ]);
+});
 async function fixture(callback){
  let fixed=false,invalid=false,volume=8,statusQueries=0;
  const requests=[];
