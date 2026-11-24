@@ -33,6 +33,23 @@ test('a stable client also blocks an unexpected prerelease from the provider bef
   updater.emit('update-available', { version: '2.0.0-beta.1' }); await tick();
   assert.equal(updater.downloads, 0); assert.equal(service.state.status, 'idle'); service.dispose();
 });
+test('update checks wait for the direct network route and fail closed if setup fails', async () => {
+  const updater = new FakeUpdater();
+  let prepare;
+  const service = new UpdateService(updater, '1.1.0', true, async () => {}, () => new Promise((resolve, reject) => {
+    prepare = { resolve, reject };
+  }));
+  const first = service.check();
+  assert.equal(updater.checks, 0);
+  prepare.reject(new Error('could not configure direct routing'));
+  assert.equal((await first).error, 'updates.checkError');
+  assert.equal(updater.checks, 0);
+  const retry = service.check();
+  prepare.resolve();
+  await retry;
+  assert.equal(updater.checks, 1);
+  service.dispose();
+});
 test('downloads in the background, reports bounded progress and waits for shutdown before explicit installation', async () => {
   const updater = new FakeUpdater(); let finishShutdown;
   const service = new UpdateService(updater, '1.1.0', true, () => new Promise(resolve => { finishShutdown = resolve; }));

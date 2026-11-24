@@ -2,6 +2,14 @@
 
 Versions follow Semantic Versioning. Stable releases use `x.y.z`; beta releases use `x.y.z-beta.N`.
 
+## [1.4.0-beta.11] - 2026-11-24
+
+- Set up a Last.fm proxy with a single address:port:username:password field and encrypted local storage.
+- Open Last.fm in a persistent Chrome profile and reuse the proxy tunnel address between app launches.
+- Check for and download updates directly.
+- Ignore SonaRelay Last.fm browser profiles when selecting an audio capture source.
+- Disable HTTP and GPU shader disk caches for Windows development runs.
+
 ## [1.4.0-beta.10] - 2026-11-24
 
 - Use MP3 for DLNA receivers that advertise MP3 support without FLAC support.

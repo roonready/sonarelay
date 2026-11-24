@@ -2,10 +2,10 @@ require('./register-ts.cjs');
 const {test}=require('node:test'),assert=require('node:assert/strict'),path=require('node:path');
 const {configureProfile}=require('../src/main/runtime/profile.ts');
 function fixture({packaged=false,custom=false,lock=true}={}){
- const paths={appData:path.resolve('profile-fixture'),userData:path.resolve('custom-profile')},created=[];let lockProfile;
- const app={isPackaged:packaged,getPath:key=>paths[key],setPath:(key,value)=>{paths[key]=value;},commandLine:{hasSwitch:()=>custom},requestSingleInstanceLock:()=>{lockProfile=paths.userData;return lock;}};
+ const paths={appData:path.resolve('profile-fixture'),userData:path.resolve('custom-profile')},created=[],switches=[];let lockProfile;
+ const app={isPackaged:packaged,getPath:key=>paths[key],setPath:(key,value)=>{paths[key]=value;},commandLine:{hasSwitch:()=>custom,appendSwitch:name=>switches.push(name)},requestSingleInstanceLock:()=>{lockProfile=paths.userData;return lock;}};
  const result=configureProfile(app,directory=>created.push(directory));
- return {result,paths,created,lockProfile};
+ return {result,paths,created,lockProfile,switches};
 }
 test('development and installed apps use separate Chromium and singleton profiles',()=>{
  const development=fixture(),installed=fixture({packaged:true});
@@ -20,4 +20,8 @@ test('explicit test or portable user-data-dir is preserved and never reads produ
 test('a second instance is rejected before opening any application window',()=>{
  assert.equal(fixture({lock:false}).result.ownsInstance,false);
  assert.equal(fixture({lock:true}).result.ownsInstance,true);
+});
+test('only Windows development runs disable HTTP and GPU shader disk caches',()=>{
+ assert.deepEqual(fixture().switches,process.platform==='win32'?['disable-http-cache','disable-gpu-shader-disk-cache']:[]);
+ assert.deepEqual(fixture({packaged:true}).switches,[]);
 });

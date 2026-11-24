@@ -125,7 +125,7 @@ export function registerWindowsMedia(ui: WebContents, onSnapshot: (snapshot: Mus
       }
       let pid: number;
       try {
-        const result = await promisify(execFile)(powershell, args('media-process.ps1', '-Executable', image),
+        const result = await promisify(execFile)(powershell, args('media-process.ps1', '-Executable', image, '-ProfileDirectory', app.getPath('userData')),
           { windowsHide: true, timeout: 5000 });
         pid = Number(result.stdout.trim());
         if (!Number.isInteger(pid) || pid <= 0 || current !== sourceId) throw new Error();

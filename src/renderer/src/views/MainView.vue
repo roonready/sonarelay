@@ -10,6 +10,7 @@ import DeviceList from '../components/DeviceList.vue';
 import DeviceControls from '../components/DeviceControls.vue';
 import LastfmSettings from '../components/LastfmSettings.vue';
 import AppUpdates from '../components/AppUpdates.vue';
+import ProxySettings from '../components/ProxySettings.vue';
 const store = useDevices();
 const media = shallowRef<MusicMetadataSnapshot>();
 const lastfm = shallowRef<LastfmState>();
@@ -66,5 +67,6 @@ async function openLastfmProfile() {
     <DeviceControls :source-id="media?.playback?.sourceId" :playing="media?.playback?.playing ?? false" />
     <LastfmSettings />
     <AppUpdates />
+    <ProxySettings />
   </aside>
 </template>

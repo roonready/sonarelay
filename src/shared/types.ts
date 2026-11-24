@@ -12,7 +12,12 @@ export interface DiscoveryState {
   scanning: boolean; error: string; lastScan: number | null;
 }
 export interface WindowsVolumeState {volume:number;muted:boolean}
+export interface ProxySettings { server: string; username: string; hasPassword: boolean; loadError: boolean }
+export interface ProxySettingsInput { server: string; username: string; password: string }
+
 export interface BridgeApi {
+ getProxySettings(): Promise<ProxySettings>;
+ saveProxySettings(input: string): Promise<ProxySettings>;
   windowsVolume(value?:number):Promise<WindowsVolumeState>;
   receiverVolume(deviceId:string,value?:number):Promise<{deviceId:string;volume:number}>;
   getUpdateState(): Promise<AppUpdateState>;

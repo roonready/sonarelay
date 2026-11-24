@@ -1,6 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { BridgeApi, DiscoveryState, LiveState, MusicMetadataSnapshot, LastfmState, AppUpdateState } from '../shared/types';
 const api: BridgeApi = {
+  getProxySettings:()=>ipcRenderer.invoke('proxy:get'),
+  saveProxySettings:settings=>ipcRenderer.invoke('proxy:save',settings),
   windowsVolume:value=>ipcRenderer.invoke('windows:volume',value),
   receiverVolume:(id,value)=>ipcRenderer.invoke('receiver:volume',id,value),
   getUpdateState:()=>ipcRenderer.invoke('updates:get'),

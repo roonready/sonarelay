@@ -7,6 +7,7 @@ import { loopbackSampleRate, registerWindowsMedia } from './runtime/windows-medi
 import { registerLastfm } from './lastfm/ipc';
 import { registerUpdates } from './updates/ipc';
 import { configureProfile } from './runtime/profile';
+import { registerProxy } from './network/proxy';
 configureBackgroundAudio(app.commandLine);
 const profile = configureProfile(app);
 function createWindow() {
@@ -20,7 +21,8 @@ function createWindow() {
   window.once('ready-to-show', () => {
     window.show();
   });
-  const lastfm=registerLastfm(window.webContents,profile.credentialsFallback);
+  const proxy = registerProxy(window.webContents);
+  const lastfm=registerLastfm(window.webContents,profile.credentialsFallback,proxy.transport,proxy.browserProxy);
   const media = registerWindowsMedia(window.webContents, lastfm.consume);
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', event => event.preventDefault());
@@ -46,7 +48,7 @@ function createWindow() {
     return shutdownTask;
   };
   const updates=registerUpdates(window,async()=>{await shutdown().catch(error=>console.error('Shutdown:',error));shutdownComplete=true;});
-  window.on('closed',()=>updates.dispose());
+  window.on('closed',()=>{updates.dispose();proxy.dispose();});
   void ready.then(() => {
     if (!closing) updates.start();
     if (!closing&&discovery.state.selectedAddress) void discovery.scan(discovery.state.selectedAddress).catch(console.error);

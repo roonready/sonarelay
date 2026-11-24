@@ -12,19 +12,39 @@ export function lastfmSignature(parameters:Record<string,string>,secret:string){
  const text=Object.keys(parameters).filter(key=>!['format','callback','api_sig'].includes(key)).sort().map(key=>key+parameters[key]).join('');
  return createHash('md5').update(text+secret,'utf8').digest('hex');
 }
-export const lastfmTransport:LastfmTransport=(method,parameters,signal)=>new Promise((resolve,reject)=>{
+interface Response {
+ statusCode?: number;
+ on(event: 'data' | 'error' | 'end', listener: (chunk: Buffer) => void): unknown;
+}
+interface Request {
+ on(event: 'close' | 'error', listener: () => void): unknown;
+ end(chunk?: string): unknown;
+ abort(): void;
+}
+type RequestFactory = (url:URL,options:{method:string;headers:Record<string,string>},response:(value:Response)=>void,body?:string)=>Request;
+export const createLastfmTransport=(requestFactory:RequestFactory):LastfmTransport=>(method,parameters,signal)=>new Promise((resolve,reject)=>{
+ if(signal?.aborted){reject(new Error(runtimeMessage('runtime103')));return;}
  const form=new URLSearchParams(parameters).toString(),url=new URL('https://ws.audioscrobbler.com/2.0/');
  if(method==='GET')url.search=form;
- const request=https.request(url,{method,signal,headers:{'User-Agent':'SonaRelay/1.0','Accept':'application/json',...(method==='POST'?{'Content-Type':'application/x-www-form-urlencoded','Content-Length':Buffer.byteLength(form)}:{})}},response=>{
+ const body=method==='POST'?form:undefined;
+ const request=requestFactory(url,{method,headers:{'User-Agent':'SonaRelay/1.0','Accept':'application/json',...(method==='POST'?{'Content-Type':'application/x-www-form-urlencoded'}:{})}},response=>{
   let bytes=0;const chunks:Buffer[]=[];response.on('error',()=>reject(new Error(runtimeMessage('runtime098'))));
-  response.on('data',(chunk:Buffer)=>{bytes+=chunk.length;if(bytes>1024*1024)request.destroy(new Error(runtimeMessage('runtime099')));else chunks.push(chunk);});
+  response.on('data',(chunk:Buffer)=>{bytes+=chunk.length;if(bytes>1024*1024)cancel('runtime099');else chunks.push(chunk);});
   response.on('end',()=>{
    try{const result=JSON.parse(Buffer.concat(chunks).toString('utf8'));if(result?.error)throw new LastfmError(Number(result.error),runtimeMessage('runtime100', {p0: Number(result.error)}));if(response.statusCode!==200)throw new Error(`Last.fm: HTTP ${response.statusCode}`);resolve(result);}
    catch(error){reject(error instanceof LastfmError?error:new Error(runtimeMessage('runtime101')));}
   });
- });
- const deadline=setTimeout(()=>request.destroy(new Error(runtimeMessage('runtime102'))),10000);
- request.on('close',()=>clearTimeout(deadline));request.on('error',()=>reject(new Error(signal?.aborted?runtimeMessage('runtime103'):runtimeMessage('runtime104'))));request.end(method==='POST'?form:undefined);
+ },body);
+ function cancel(key:'runtime099'|'runtime102'|'runtime103'){reject(new Error(runtimeMessage(key)));request.abort();}
+ const abort=()=>cancel('runtime103');
+ const deadline=setTimeout(()=>cancel('runtime102'),10000);
+ signal?.addEventListener('abort',abort,{once:true});
+ request.on('close',()=>{clearTimeout(deadline);signal?.removeEventListener('abort',abort);});
+ request.on('error',()=>reject(new Error(runtimeMessage('runtime104'))));request.end(body);
+});
+export const lastfmTransport=createLastfmTransport((url,options,response,body)=>{
+ if(body!==undefined)options.headers['Content-Length']=String(Buffer.byteLength(body));
+ return https.request(url,options,response);
 });
 export class LastfmClient {
  constructor(readonly apiKey:string,private secret:string,private transport:LastfmTransport=lastfmTransport){}

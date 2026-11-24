@@ -3,11 +3,53 @@ const {test}=require('node:test'),assert=require('node:assert/strict'),fs=requir
 const {LastfmClient,LastfmError,lastfmSignature,lastfmResponseShape}=require('../src/main/lastfm/client.ts');
 const {LastfmStorage}=require('../src/main/lastfm/storage.ts');
 const {LastfmTracker}=require('../src/main/lastfm/tracker.ts');
+const {startLastfmBrowserProxy}=require('../src/main/lastfm/browser-proxy.ts');
+const {parseProxyInput,formatSavedProxy}=require('../src/shared/proxy-format.ts');
 const {LastfmService}=require('../src/main/lastfm/service.ts');
 const settings={scrobbling:true,nowPlaying:true},epoch=1700000000000;
 function track(position,extra={}){return {title:'Song',artist:'Artist',album:'Album',trackId:'123',duration:100,position,playing:true,rate:1,...extra};}
 function collect(tracker,seconds,extra={}){const events=[];for(let i=0;i<=seconds;i++)events.push(...tracker.observe(track(i,extra),settings,i*1000,epoch+i*1000));return events;}
 const tick=()=>new Promise(r=>setImmediate(r));
+test('proxy input accepts the provider format and hides the saved password',()=>{
+ assert.deepEqual(parseProxyInput('proxy.example:9195:user:one:two'),{
+  server:'http://proxy.example:9195',username:'user',password:'one:two'
+ });
+ assert.deepEqual(parseProxyInput('socks5://[::1]:1080'),{
+  server:'socks5://[::1]:1080',username:'',password:''
+ });
+ const saved=formatSavedProxy({server:'https://proxy.example',username:'user',hasPassword:true,loadError:false});
+ assert.equal(saved,'https://proxy.example:443:user');
+ assert.deepEqual(parseProxyInput(saved),{server:'https://proxy.example:443',username:'user',password:''});
+ assert.deepEqual(parseProxyInput(''),{server:'',username:'',password:''});
+ assert.throws(()=>parseProxyInput('proxy.example:99999:user:pass'),/Invalid proxy port/);
+});
+test('Last.fm browser proxy tunnels external HTTPS domains with saved authentication',async()=>{
+ const http=require('node:http');
+ const upstream=http.createServer();
+ const requests=[];
+ upstream.on('connect',(request,socket)=>{
+  requests.push([request.url,request.headers['proxy-authorization']]);
+  socket.end('HTTP/1.1 200 Connection Established\r\n\r\n');
+ });
+ await new Promise(resolve=>upstream.listen(0,'127.0.0.1',resolve));
+ let proxy;
+ try{
+  proxy=await startLastfmBrowserProxy({server:'http://127.0.0.1:'+upstream.address().port,username:'user',password:'test'});
+  const connect=target=>new Promise((resolve,reject)=>{
+   const request=http.request(proxy.server,{method:'CONNECT',path:target,agent:false});
+   request.once('connect',(response,socket)=>{socket.destroy();resolve(response.statusCode);});
+   request.once('error',reject);
+   request.setTimeout(2000,()=>request.destroy(new Error('Proxy test timed out')));
+   request.end();
+  });
+  assert.equal(await connect('cdn.example.com:443'),200);
+  assert.equal(await connect('cdn.example.com:80'),403);
+  assert.deepEqual(requests,[['cdn.example.com:443','Basic '+Buffer.from('user:test').toString('base64')]]);
+ }finally{
+  proxy?.close();
+  await new Promise(resolve=>upstream.close(resolve));
+ }
+});
 function mockStorage(){let saved,removed=0,prefs={...settings};return {get saved(){return saved;},get removed(){return removed;},preferences:async()=>prefs,loadSession:async()=>saved,saveSession:async value=>{saved=value;},removeSession:async()=>{saved=undefined;removed++;},savePreferences:async value=>{prefs=value;}};}
 function mockClient(handler){const calls=[];const client=new LastfmClient('a'.repeat(32),'b'.repeat(32),async(method,parameters)=>{calls.push({method,parameters});if(handler)return handler(method,parameters);if(parameters.method==='auth.getToken')return {token:'t'.repeat(32)};if(parameters.method==='auth.getSession')return {session:{key:'k'.repeat(32),name:'Listener'}};return parameters.method==='track.scrobble'?{scrobbles:{'@attr':{accepted:1}}}:{nowplaying:{ignoredMessage:{code:'0'}}};});return {client,calls};}
 test('Last.fm signature uses sorted UTF-8 raw parameters, excludes format/callback and puts writes in POST',async()=>{

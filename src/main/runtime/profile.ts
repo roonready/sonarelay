@@ -13,6 +13,11 @@ export function configureProfile(app: ProfileApp, mkdir = (directory: string) =>
   app.setPath('userData', profile);
   // setPath(userData) alone must not leave sessionData pointing at an earlier default.
   app.setPath('sessionData', profile);
+  if (process.platform === 'win32' && !app.isPackaged) {
+    // A dev restart can overlap with Chromium's previous cache handles on Windows.
+    app.commandLine.appendSwitch('disable-http-cache');
+    app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
+  }
   return {
     ownsInstance: app.requestSingleInstanceLock(),
     credentialsFallback: !custom && !app.isPackaged ? installedProfile : undefined,

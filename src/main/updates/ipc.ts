@@ -1,5 +1,6 @@
 import { app, ipcMain, type BrowserWindow } from 'electron';
 import { autoUpdater } from 'electron-updater';
+import { getNetSession } from 'electron-updater/out/electronHttpExecutor';
 import { UpdateService } from './service';
 
 // A download may fail after its window has closed. Keep an app-lifetime listener
@@ -7,7 +8,8 @@ import { UpdateService } from './service';
 autoUpdater.on('error', () => {});
 
 export function registerUpdates(window: BrowserWindow, beforeInstall: () => Promise<void>) {
-  const service = new UpdateService(autoUpdater, app.getVersion(), app.isPackaged && process.platform === 'win32', beforeInstall);
+  const service = new UpdateService(autoUpdater, app.getVersion(), app.isPackaged && process.platform === 'win32',
+    beforeInstall, () => getNetSession().setProxy({ mode: 'direct' }));
   const channels = ['updates:get', 'updates:check', 'updates:install'];
   let disposed = false;
   const send = () => { if (!disposed && !window.webContents.isDestroyed()) window.webContents.send('updates:state', { ...service.state }); };

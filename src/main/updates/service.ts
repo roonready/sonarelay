@@ -38,7 +38,8 @@ export class UpdateService extends EventEmitter {
   private installTask?: Promise<void>;
   private downloadTask?: Promise<void>;
 
-  constructor(private updater: UpdaterAdapter, version: string, enabled: boolean, private beforeInstall: () => Promise<void>) {
+  constructor(private updater: UpdaterAdapter, version: string, enabled: boolean, private beforeInstall: () => Promise<void>,
+    private prepareNetwork?: () => Promise<void>) {
     super();
     const channel = versionChannel(version);
     this.state = { status: enabled ? 'idle' : 'disabled', channel, currentVersion: version, version: '', percent: 0, error: '' };
@@ -90,7 +91,10 @@ export class UpdateService extends EventEmitter {
     if (this.checkTask) return this.checkTask;
     this.update({ status: 'checking', error: '' });
     this.checkTask = (async () => {
-      try { await this.updater.checkForUpdates(); } catch { this.fail(); }
+      try {
+        if (this.prepareNetwork) await this.prepareNetwork();
+        if (!this.disposed) await this.updater.checkForUpdates();
+      } catch { this.fail(); }
       finally { this.checkTask = undefined; }
       return { ...this.state };
     })();
