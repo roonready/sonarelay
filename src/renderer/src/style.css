@@ -22,8 +22,8 @@ body { margin: 0; overflow: hidden; }
   .panel .empty { padding: 6px 0; }
   .panel .empty p { margin: 4px 0 0; }
   .panel > .error { margin: 6px 0; }
-  .panel > .controls, .panel > .app-settings, .panel > .app-updates { margin-top: 10px; padding-top: 8px; }
-  .panel > .controls, .panel > .app-updates { gap: 6px; }
+  .panel > .controls, .panel > .app-settings { margin-top: 10px; padding-top: 8px; }
+  .panel > .controls { gap: 6px; }
 }
 .brand { font-size: 11px; letter-spacing: 2px; color: #a9b7ff; }
 h1 { margin: 16px 0 8px; font-size: 25px; }

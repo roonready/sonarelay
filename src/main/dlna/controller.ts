@@ -4,6 +4,22 @@ import { soap } from './soap-client';
 import { didl } from './didl';
 export class Controller {
  constructor(readonly device: RendererDevice, readonly address: string) {}
+ async liveEncoding(): Promise<'flac' | 'mp3'> {
+  const service = this.device.services.find(s => s.type.includes(':ConnectionManager:'));
+  if (!service) return 'flac';
+  try {
+   const { Sink } = await soap(service, 'GetProtocolInfo', {}, this.address, 1500);
+   if (typeof Sink !== 'string') return 'flac';
+   const formats = new Set<string>();
+   for (const entry of Sink.split(',')) {
+    const [protocol, , format, info] = entry.trim().toLowerCase().split(':', 4);
+    if ((protocol === 'http-get' || protocol === '*') && format && info) formats.add(format.trim());
+   }
+   const acceptsFlac = ['audio/flac', 'audio/*', '*/*', '*'].some(format => formats.has(format));
+   if (!acceptsFlac && formats.has('audio/mpeg')) return 'mp3';
+  } catch { /* Optional capabilities may be unavailable. */ }
+  return 'flac';
+ }
  private av(action: string, values: Record<string,string|number> = {}) {
   const service = this.device.services.find(s=>s.type.includes(':AVTransport:'));
   if(!service) throw new Error(runtimeMessage('runtime081'));

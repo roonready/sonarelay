@@ -43,10 +43,16 @@ export async function parseDevice(headers: Record<string, string>, remoteIp: str
     if (!/^urn:schemas-upnp-org:device:MediaRenderer:\d+$/.test(str(device?.deviceType))) continue;
     const services: DlnaService[] = [];
     for (const service of list<any>(device?.serviceList?.service)) {
-      if (!/^urn:schemas-upnp-org:service:(AVTransport|RenderingControl):\d+$/.test(str(service.serviceType))) continue;
+      const type = str(service.serviceType);
+      if (!/^urn:schemas-upnp-org:service:(AVTransport|RenderingControl|ConnectionManager):\d+$/.test(type)) continue;
+      if (!URL.canParse(str(service.controlURL), base) || !URL.canParse(str(service.SCPDURL), base)) continue;
       const control = new URL(str(service.controlURL), base);
       const scpd = new URL(str(service.SCPDURL), base);
       if (control.hostname !== remoteIp || scpd.hostname !== remoteIp || control.protocol !== 'http:') continue;
+      if (type.includes(':ConnectionManager:')) {
+        services.push({ type, controlUrl: control.href, scpdUrl: scpd.href, actions: ['GetProtocolInfo'] });
+        continue;
+      }
       try {
         const definition = await getXml(scpd, address);
         const actions = list<any>(definition.scpd?.actionList?.action).map(a => str(a.name)).filter(Boolean);

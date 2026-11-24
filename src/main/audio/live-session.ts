@@ -8,6 +8,7 @@ import { AudioEngine } from './audio-engine';
 import type { AudioSource } from './audio-source';
 import { AirplayOutput } from '../airplay2/output';
 import { LiveServer } from '../media-server/live-server';
+import { Controller } from '../dlna/controller';
 import type { RendererDevice, LiveState, PlaybackCommand } from '../../shared/types';
 export class LiveSession extends EventEmitter {
  private source?:AudioSource;
@@ -57,14 +58,17 @@ export class LiveSession extends EventEmitter {
  async begin(device:RendererDevice,address:string,sampleRate:number,input:{source:AudioSource;title:string}):Promise<LiveState>{
   if(this.commandBusy)throw new Error(runtimeMessage('runtime028'));
   await this.stop();
+  const controller = device.protocol === 'airplay2' ? undefined : receiverController(device,address);
+  const encoding = device.protocol === 'airplay2' ? 'alac'
+   : device.protocol === 'cast' ? 'mp3'
+   : controller instanceof Controller ? await controller.liveEncoding() : 'flac';
   const source=input.source;
   this.streamTitle=input.title;
   const engine=new AudioEngine(source,{sampleRate,channels:2,bitDepth:16});
   const server=new LiveServer();
-  this.source=source;this.engine=engine;this.server=device.protocol==='airplay2'?undefined:server;this.controller=device.protocol==='airplay2'?undefined:receiverController(device,address);
+  this.source=source;this.engine=engine;this.server=device.protocol==='airplay2'?undefined:server;this.controller=controller;
   this.volumeSupported=!!(device.capabilities?.includes('SetVolume')||device.services?.some(service=>service.actions.includes('SetVolume')));
   if(device.protocol==='airplay2')this.airplay=new AirplayOutput(device,address);
-  const encoding=device.protocol==='airplay2'?'alac':device.protocol==='cast'?'mp3':'flac';
   this.state={playbackReady:false,encoding,volume:null,sessionId:randomBytes(16).toString('hex'),deviceId:device.id,active:true,connected:false,status:runtimeMessage('runtime029', {p0: encoding.toUpperCase()}),error:'',sampleRate,pcmBytes:0,encodedBytes:0,connections:0,httpRequests:0};
   try {
    await engine.start();

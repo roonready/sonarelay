@@ -2,6 +2,11 @@
 
 Versions follow Semantic Versioning. Stable releases use `x.y.z`; beta releases use `x.y.z-beta.N`.
 
+## [1.4.0-beta.10] - 2026-11-24
+
+- Use MP3 for DLNA receivers that advertise MP3 support without FLAC support.
+- Make the updates panel more compact.
+
 ## [1.4.0-beta.9] - 2026-11-23
 
 - Include the album artist and track number in Last.fm Now Playing and scrobbles when Windows provides them.

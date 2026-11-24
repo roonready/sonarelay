@@ -189,7 +189,7 @@
   "playback.alac": "Выход: ALAC {rate} Гц · 16 бит",
   "playback.rtp": "RTP: {packets} · обмены часов: {exchanges}",
   "playback.underruns": "Нехватка PCM: {count}",
-  "playback.mp3": "MP3 — режим совместимости Google Cast, с потерями.",
+  "playback.mp3": "MP3 — режим совместимости со сжатием с потерями.",
   "playback.wiimVolume": "Громкость регулируется в WiiM Home.",
   "playback.volume": "Громкость {value}",
   "settings.title": "Настройки",

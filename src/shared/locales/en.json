@@ -189,7 +189,7 @@
   "playback.alac": "Output: ALAC {rate} Hz · 16 bit",
   "playback.rtp": "RTP: {packets} · clock exchanges: {exchanges}",
   "playback.underruns": "PCM underruns: {count}",
-  "playback.mp3": "MP3 — lossy Google Cast compatibility mode.",
+  "playback.mp3": "MP3 — lossy compatibility mode.",
   "playback.wiimVolume": "Control volume in WiiM Home.",
   "playback.volume": "Volume {value}",
   "settings.title": "Settings",
