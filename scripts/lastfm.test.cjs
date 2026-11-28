@@ -77,10 +77,15 @@ test('one Now Playing and one scrobble after half duration; timestamp is first o
  const events=tracker.observe(track(50),settings,50000,epoch+50000);assert.equal(events.length,1);assert.equal(events[0].method,'track.scrobble');assert.equal(events[0].parameters.timestamp,'1700000000');
  assert.deepEqual(tracker.observe(track(51),settings,51000,epoch+51000),[]);
 });
-test('Last.fm thresholds reject tracks <=30 seconds and unknown duration, cap long tracks at 240 seconds',()=>{
- for(const duration of [20,30,null])assert.ok(!collect(new LastfmTracker(),50,{duration}).some(e=>e.method==='track.scrobble'));
- const tracker=new LastfmTracker();assert.ok(!collect(tracker,239,{duration:1000}).some(e=>e.method==='track.scrobble'));
- assert.equal(tracker.observe(track(240,{duration:1000}),settings,240000,epoch+240000)[0].method,'track.scrobble');
+test('Last.fm skips tracks <=30 seconds and scrobbles long or unknown tracks at 120 seconds',()=>{
+ for(const duration of [20,30])assert.ok(!collect(new LastfmTracker(),120,{duration}).some(e=>e.method==='track.scrobble'));
+ for(const duration of [1000,null,0]){
+  const tracker=new LastfmTracker();
+  assert.ok(!collect(tracker,119,{duration}).some(e=>e.method==='track.scrobble'));
+  const [submission]=tracker.observe(track(120,{duration}),settings,120000,epoch+120000);
+  assert.equal(submission.method,'track.scrobble');
+  assert.equal(submission.parameters.duration,duration===1000?'1000':undefined);
+ }
 });
 test('Now Playing and scrobbles include valid GSMTC album artist and track number',()=>{
  const events=collect(new LastfmTracker(),50,{albumArtist:' Various Artists ',trackNumber:4});
@@ -143,6 +148,18 @@ test('safe storage is mandatory and only ciphertext is written; disconnect remov
 test('Now Playing can use playback metadata without position, but scrobbles require observed time',()=>{
  const tracker=new LastfmTracker();const first=tracker.observe(track(null),settings,0,epoch);assert.equal(first[0].method,'track.updateNowPlaying');
  for(let i=1;i<300;i++)assert.deepEqual(tracker.observe(track(null),settings,i*1000,epoch+i*1000),[]);
+});
+test('unknown duration and position can scrobble after 120 seconds of playing samples',()=>{
+ const tracker=new LastfmTracker();
+ const observe=(second,playing=true)=>tracker.observe(track(null,{duration:null,playing}),settings,second*1000,epoch+second*1000);
+ for(let second=0;second<=60;second++)assert.ok(!observe(second).some(event=>event.method==='track.scrobble'));
+ observe(61,false);observe(80,false);observe(81);
+ for(let second=82;second<=140;second++)assert.deepEqual(observe(second),[]);
+ assert.deepEqual(observe(151),[]);
+ const [submission]=observe(152);
+ assert.equal(submission.method,'track.scrobble');
+ assert.equal(submission.parameters.duration,undefined);
+ assert.deepEqual(observe(153),[]);
 });
 test('metadata samples automatically produce authenticated Now Playing and scrobble independently of receiver protocol',async()=>{
  const store=mockStorage();await store.saveSession({key:'k'.repeat(32),name:'Listener',apiKey:'a'.repeat(32)});const {client,calls}=mockClient();let now=0;

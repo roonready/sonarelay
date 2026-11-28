@@ -72,7 +72,9 @@ try {
                     if ($length -gt 0) { $duration = $length }
                     # GSMTC reports an anchor, which may stay unchanged throughout playback.
                     $anchor = $timeline.LastUpdatedTime
-                    if ($playing -and $anchor -gt [DateTimeOffset]::MinValue) {
+                    $hasAnchor = $anchor.UtcDateTime -gt [DateTime]::FromFileTimeUtc(0)
+                    if (!$hasAnchor -and $null -eq $duration -and $position -eq 0) { $position = $null }
+                    if ($playing -and $hasAnchor) {
                         $elapsed = ([DateTimeOffset]::UtcNow - $anchor).TotalSeconds
                         if ($elapsed -ge 0) { $position += $elapsed * $rate }
                     }

@@ -2,6 +2,11 @@
 
 Versions follow Semantic Versioning. Stable releases use `x.y.z`; beta releases use `x.y.z-beta.N`.
 
+## [1.4.0-beta.12] - 2026-11-28
+
+- Read the Windows ARP cache once per receiver discovery cycle.
+- Submit Last.fm scrobbles after half the track or two minutes, whichever is earlier. Use two minutes when duration is unknown, and count Windows playing samples when the source also has no usable playback position.
+
 ## [1.4.0-beta.11] - 2026-11-24
 
 - Set up a Last.fm proxy with a single address:port:username:password field and encrypted local storage.

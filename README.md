@@ -25,7 +25,7 @@ SonaRelay выбирает воспроизводящий сеанс GSMTC с п
 
 ### Last.fm
 
-В разделе **Настройки → Last.fm** подключите аккаунт, подтвердите авторизацию в браузере и включите отображение текущего трека или скробблинг. Для скроббла нужны исполнитель, название, позиция и длительность трека. Для треков длиннее 30 секунд запись отправляется после половины трека или четырёх минут прослушивания, смотря что наступит раньше. Раздел показывает последнее действие, принятое Last.fm.
+В разделе **Настройки → Last.fm** подключите аккаунт, подтвердите авторизацию в браузере и включите отображение текущего трека или скробблинг. Для скроббла нужны исполнитель и название. Для треков длиннее 30 секунд SonaRelay отправляет запись после половины трека или двух минут прослушивания, смотря что наступит раньше. При неизвестной длительности порог составляет две минуты. Если также нет позиции, SonaRelay считает время по отметкам Windows о воспроизведении. Раздел показывает последнее действие, принятое Last.fm.
 
 ## English
 
@@ -35,7 +35,7 @@ On Windows 11 x64, install Node.js and npm, then run `npm.cmd ci` and `npm.cmd s
 
 Capture requires an identifiable source process tree and includes audio from other playing tabs in the same browser. Local playback continues. **This computer** controls Windows master volume.
 
-Connect your account under **Settings → Last.fm** to show Now Playing or scrobble. Scrobbling requires an artist, title and usable playback position and duration. For tracks longer than 30 seconds, submission occurs after half the track or four minutes of listening, whichever is earlier.
+Connect your account under **Settings → Last.fm** to show Now Playing or scrobble. Scrobbling requires an artist and title. For tracks longer than 30 seconds, SonaRelay submits after half the track or two minutes of listening, whichever is earlier. When the duration is unknown, SonaRelay submits after two minutes. If playback position is also unavailable, it counts time from Windows playback status samples.
 
 ## Разработка / Development
 

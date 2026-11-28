@@ -77,13 +77,14 @@ export class Discovery extends EventEmitter {
     const slimError=slimAddress?this.state.diagnostics.slimError:undefined;
     this.state.selectedAddress = address; this.state.scanning = true; this.state.error = '';
     this.state.diagnostics = { replies: 0, descriptions: 0, unicastPeers: 0, bluosDevices:0, castDevices:0, slimAddress, slimError }; this.publish();
+    const lanPeers = neighbors(address, selected.netmask);
     this.slimPending=true;
     void this.slim.start(address,selected.netmask).then(()=>{
       if(generation!==this.generation)return;this.state.diagnostics.slimAddress=address;this.state.diagnostics.slimError='';
       this.state.devices=[...this.state.devices.filter(d=>d.protocol!=='slimproto'),...this.slim.devices].sort(compareReceivers);this.publish();
     }).catch(error=>{if(generation===this.generation){this.state.diagnostics.slimError=error.message;this.publish();}}).finally(()=>{if(generation===this.generation){this.slimPending=false;this.complete(generation);}});
     this.castPending=true;
-    void neighbors(address,selected.netmask).then(peers=>{
+    void lanPeers.then(peers=>{
       if(generation!==this.generation)return;
       const known=this.state.devices.filter(d=>d.protocol==='cast').map(d=>d.ip);
       this.stopCast=discoverCast(address,selected.netmask,[...new Set([...peers,...known])].filter(ip=>sameSubnet(ip,address,selected.netmask)),()=>generation!==this.generation,device=>{
@@ -94,7 +95,8 @@ export class Discovery extends EventEmitter {
       },()=>{if(generation===this.generation){this.castPending=false;this.complete(generation);}});
     }).catch(error=>{if(generation===this.generation){this.castPending=false;this.state.error=runtimeMessage('runtime076', {p0: error.message});this.publish();this.complete(generation);}});
     this.airplayPending=true;
-    void neighbors(address,selected.netmask).then(async peers=>{
+    void lanPeers.then(async peers=>{
+      if(generation!==this.generation)return;
       const known=this.state.devices.filter(d=>d.protocol==='airplay2').map(d=>d.ip);
       const devices=await discoverAirplay2([...new Set([...peers,...known])].filter(ip=>sameSubnet(ip,address,selected.netmask)),address,()=>generation!==this.generation,selected.netmask);
       if(generation!==this.generation)return;
@@ -103,7 +105,7 @@ export class Discovery extends EventEmitter {
     this.bluosPending=true;
     this.bluosScan = new AbortController();
     const knownBluos = this.state.devices.filter(d => d.protocol === 'bluos').map(d => d.ip);
-    const bluosPeers = neighbors(address, selected.netmask).then(peers => [...knownBluos, ...peers], () => knownBluos);
+    const bluosPeers = lanPeers.then(peers => [...knownBluos, ...peers], () => knownBluos);
     void discoverBluos(bluosPeers, address, selected.netmask, this.bluosScan.signal, checkSubnet).then(devices=>{
       if(generation!==this.generation)return;
       this.state.diagnostics.bluosDevices=devices.length;
@@ -166,7 +168,7 @@ export class Discovery extends EventEmitter {
         };
         search([GROUP]);
         this.retries.push(setTimeout(() => search([GROUP]), 1500));
-        void neighbors(address, selected.netmask).then(peers => {
+        void lanPeers.then(peers => {
           if (generation !== this.generation || this.finished) return;
           this.state.diagnostics.unicastPeers = peers.length; this.publish();
           search(peers);
