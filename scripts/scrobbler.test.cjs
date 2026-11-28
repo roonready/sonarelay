@@ -113,6 +113,66 @@ test('retains a blocked queue until token replacement and records a rejected eve
   assert.equal(attempts, 2);
 });
 
+test('changes an incorrect address and resends the queue with the original event ID', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'sonarelay-transfer-'));
+  const file = join(dir, 'queue.json');
+  const wrong = 'http://192.168.1.90:5173';
+  let oldEvent;
+  let newEvent;
+  const client = new ScrobblerService(file, crypto, () => {}, async (url, request) => {
+    const event = JSON.parse(request.body);
+    if (url === wrong + '/api/scrobbles') {
+      assert.equal(request.headers.Authorization, 'Bearer ' + token);
+      oldEvent = event;
+      return new Response(null, { status: 404 });
+    }
+    assert.equal(url, origin + '/api/scrobbles');
+    assert.equal(request.headers.Authorization, 'Bearer ' + replacement);
+    newEvent = event;
+    return accepted();
+  });
+  t.after(async () => { await client.dispose(); await rm(dir, { recursive: true, force: true }); });
+  await client.configure({ url: wrong, enabled: true, token });
+  play(client, 0);
+  await eventually(() => client.snapshot().error === 'endpoint');
+
+  await assert.rejects(client.configure({ url: origin, enabled: true, transferQueue: true }), /tokenRequired/);
+  await assert.rejects(client.configure({ url: origin, enabled: true, token: replacement }), /pendingOrigin/);
+  assert.equal(client.snapshot().url, wrong);
+  assert.equal(client.snapshot().pending, 1);
+
+  await client.configure({ url: origin, enabled: true, token: replacement, transferQueue: true });
+  await eventually(() => client.snapshot().pending === 0 && newEvent);
+  assert.deepEqual(newEvent, oldEvent);
+  assert.equal(client.snapshot().rejected, 0);
+  assert.equal(JSON.parse(await readFile(file, 'utf8')).url, origin);
+});
+
+test('changing the address cancels uploads for scrobbles accepted by the previous server', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'sonarelay-transfer-artwork-'));
+  const bytes = await sharp({ create: { width: 24, height: 17, channels: 3, background: '#7b9dbd' } }).png().toBuffer();
+  const artwork = 'data:image/png;base64,' + bytes.toString('base64');
+  let upload;
+  const client = new ScrobblerService(join(dir, 'queue.json'), crypto, () => {}, async (url, request) => {
+    if (request.method === 'POST') return accepted(201, 'upload');
+    upload = request;
+    assert.equal(url, origin + '/api/scrobbles/' + acceptedId + '/artwork');
+    return new Promise(resolve => {
+      request.signal.addEventListener('abort', () => resolve(new Response(null, { status: 503 })), { once: true });
+    });
+  });
+  t.after(async () => { await client.dispose(); await rm(dir, { recursive: true, force: true }); });
+  await client.configure({ url: origin, enabled: true, token });
+  play(client, 0, undefined, artwork);
+  await eventually(() => upload);
+  const { pending, url } = await client.configure({
+    url: 'http://192.168.1.90:5173', enabled: true, token: replacement, transferQueue: true,
+  });
+  assert.equal(url, 'http://192.168.1.90:5173');
+  assert.equal(pending, 0);
+  assert.ok(upload.signal.aborted);
+});
+
 test('sends pHash then retries only PUT, while new listens can reuse the cover without uploading', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'sonarelay-artwork-'));
   const path = join(dir, 'queue.json');

@@ -22,7 +22,7 @@ interface Scrobble {
 }
 type Observation = Pick<Awaited<ReturnType<typeof inspectArtwork>>, 'pHash' | 'pHashVersion' | 'width' | 'height'>;
 type PendingCover = { bytes: Buffer; observation?: Observation; scrobbleId?: string; retryAt: number; delay: number };
-type Delivery = { status: number; sent?: boolean; coverSkipped?: boolean };
+type Delivery = { status: number; sent?: boolean; coverSkipped?: boolean; scrobbleId?: string };
 const uuid = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 interface Saved {
   url: string;
@@ -137,24 +137,29 @@ export class ScrobblerService {
     return this.run(async () => {
       if (!this.loaded || this.stopped) throw new Error('Settings unavailable');
       const url = endpoint(input.url);
+      const differentOrigin = url !== this.saved.url;
       const token = input.token?.trim();
       if (token && !/^[\w-]{43}$/.test(token)) throw new Error('scrobbler.invalidToken');
-      if (url !== this.saved.url && (this.saved.queue.length || this.staged.length || this.pendingUploads().length)) {
+      if (input.enabled && !token && (!this.token || differentOrigin)) throw new Error('scrobbler.tokenRequired');
+      const previousUploads = differentOrigin ? this.pendingUploads() : [];
+      if (differentOrigin && input.transferQueue !== true &&
+          (this.saved.queue.length || this.staged.length || previousUploads.length)) {
         throw new Error('scrobbler.pendingOrigin');
       }
-      if (input.enabled && !token && (!this.token || url !== this.saved.url)) throw new Error('scrobbler.tokenRequired');
       const encryptedToken = token ? await this.crypto.encrypt(token)
-        : url === this.saved.url ? this.saved.encryptedToken : undefined;
-      if (input.enabled !== this.saved.enabled || url !== this.saved.url) this.tracker.reset();
-      const blocked = !token && this.saved.blocked === 'auth' ? 'auth' : undefined;
+        : differentOrigin ? undefined : this.saved.encryptedToken;
+      const resetTracker = input.enabled !== this.saved.enabled;
+      const blocked = !differentOrigin && !token && this.saved.blocked === 'auth' ? 'auth' : undefined;
       await this.persist({ ...this.saved, enabled: input.enabled, url, encryptedToken, blocked });
+      this.revision++;
+      this.controller?.abort();
+      if (resetTracker) this.tracker.reset();
+      for (const [eventId] of previousUploads) this.covers.delete(eventId);
       this.token = token || (encryptedToken ? this.token : '');
       this.configureNowPlaying();
       this.retry = 0;
       for (const cover of this.covers.values()) { cover.retryAt = 0; cover.delay = 0; }
-      this.revision++;
       this.error = '';
-      this.controller?.abort();
       this.notify();
       this.schedule();
       return this.snapshot();
@@ -247,8 +252,8 @@ export class ScrobblerService {
     const action = result.artwork?.action;
     if (!result.scrobbleId || !uuid.test(result.scrobbleId) || !action || !['none', 'reuse', 'upload'].includes(action)
       || (response.status === 200 && result.duplicate !== true)) return { status: 0 };
-    if (action === 'upload' && cover) cover.scrobbleId = result.scrobbleId;
-    return { status: response.status, sent: true, coverSkipped: action === 'upload' && !cover };
+    return { status: response.status, sent: true, coverSkipped: action === 'upload' && !cover,
+      scrobbleId: action === 'upload' && cover ? result.scrobbleId : undefined };
   }
 
   private async deliverCover(url: string, token: string, signal: AbortSignal, revision: number) {
@@ -302,13 +307,15 @@ export class ScrobblerService {
 
     await this.run(async () => {
       if (revision !== this.revision || this.stopped) return;
-      const { status, sent, coverSkipped } = result;
+      const { status, sent, coverSkipped, scrobbleId } = result;
       const invalid = [400, 413, 415, 422].includes(status);
       if (sent || invalid) {
         await this.persist({ ...this.saved, queue: this.saved.queue.slice(1),
           lastSent: sent ? Date.now() : this.saved.lastSent,
           rejected: sent ? this.saved.rejected : this.saved.rejected + 1 });
-        if (!this.covers.get(event.eventId)?.scrobbleId) this.covers.delete(event.eventId);
+        const cover = this.covers.get(event.eventId);
+        if (scrobbleId && cover) cover.scrobbleId = scrobbleId;
+        else this.covers.delete(event.eventId);
         this.error = coverSkipped ? 'artwork' : '';
         this.retry = 0;
       } else if (status && status < 500 && ![408, 425, 429].includes(status)) {

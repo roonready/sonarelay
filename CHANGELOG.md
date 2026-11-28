@@ -2,6 +2,10 @@
 
 Versions follow Semantic Versioning. Stable releases use `x.y.z`; beta releases use `x.y.z-beta.N`.
 
+## [1.4.0-beta.14] - 2026-11-28
+
+- Allow users to correct the Audio Scrobbler API address and transfer their pending scrobbles to it after confirming the change.
+
 ## [1.4.0-beta.13] - 2026-11-28
 
 - Add Audio Scrobbler settings, authenticated delivery, Now Playing and artwork uploads.

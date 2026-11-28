@@ -11,6 +11,7 @@ const enabled = ref(false);
 const token = ref('');
 const busy = ref(false);
 const error = ref('');
+const confirmTransfer = ref(false);
 let unsubscribe: (() => void) | undefined;
 let disposed = false;
 
@@ -28,17 +29,25 @@ onMounted(async () => {
 });
 onUnmounted(() => { disposed = true; unsubscribe?.(); });
 
-async function save() {
+async function save(transferQueue = false) {
+  if (busy.value) return;
   busy.value = true;
   error.value = '';
+  confirmTransfer.value = false;
   try {
-    const value = await ipc.saveScrobbler({ url: url.value, enabled: enabled.value, token: token.value || undefined });
+    const value = await ipc.saveScrobbler({
+      url: url.value, enabled: enabled.value, token: token.value || undefined, transferQueue,
+    });
     if (!disposed) {
       fill(value);
       token.value = '';
     }
   } catch (reason) {
-    const keys = ['invalidUrl', 'invalidToken', 'pendingOrigin', 'tokenRequired'];
+    if (String(reason).includes('scrobbler.pendingOrigin')) {
+      confirmTransfer.value = true;
+      return;
+    }
+    const keys = ['invalidUrl', 'invalidToken', 'tokenRequired'];
     error.value = 'scrobbler.' + (keys.find(key => String(reason).includes('scrobbler.' + key)) ?? 'saveError');
   } finally { busy.value = false; }
 }
@@ -47,12 +56,21 @@ async function save() {
 <template>
   <section class="scrobbler" :aria-label="t('scrobbler.brand')">
     <h2>{{ t('scrobbler.brand') }}</h2>
-    <form v-if="state" @submit.prevent="save">
+    <form v-if="state" @submit.prevent="save()">
       <label class="switch"><input v-model="enabled" type="checkbox"> {{ t('scrobbler.enabled') }}</label>
-      <label>{{ t('scrobbler.url') }}<input v-model.trim="url" type="url" required maxlength="2048"></label>
+      <label>{{ t('scrobbler.url') }}<input v-model.trim="url" type="url" required maxlength="2048"
+        :disabled="busy" @input="confirmTransfer = false"></label>
       <label>{{ t('scrobbler.token') }}<input v-model.trim="token" type="password" autocomplete="off" maxlength="128"
         :placeholder="state.hasToken ? t('scrobbler.savedToken') : ''"></label>
-      <button :disabled="busy">{{ t('scrobbler.save') }}</button>
+      <div v-if="confirmTransfer" class="queue-transfer">
+        <p>{{ t('scrobbler.confirmTransfer', { url }) }}</p>
+        <p>{{ t('scrobbler.transferArtworkNote') }}</p>
+        <div class="queue-actions">
+          <button type="button" :disabled="busy" @click="save(true)">{{ t('scrobbler.transferQueue') }}</button>
+          <button type="button" @click="confirmTransfer = false">{{ t('scrobbler.cancelTransfer') }}</button>
+        </div>
+      </div>
+      <button v-else :disabled="busy">{{ t('scrobbler.save') }}</button>
       <div class="delivery" role="status">
         <p>{{ t('scrobbler.pending', { count: state.pending }) }}</p>
         <p v-if="state.lastSent">{{ t('scrobbler.lastSent', { time: d(state.lastSent, 'time') }) }}</p>
@@ -73,5 +91,7 @@ form { gap: 10px; }
 .switch input { width: auto; }
 input { min-width: 0; }
 button { justify-self: start; padding: 8px 10px; border: 1px solid #394359; border-radius: 7px; background: #28314c; }
+.queue-transfer p { margin: 0 0 6px; overflow-wrap: anywhere; }
+.queue-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .delivery p { margin: 2px 0; font-size: 12px; color: #aab5c8; }
 </style>

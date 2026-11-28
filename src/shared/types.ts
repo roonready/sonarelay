@@ -68,7 +68,7 @@ export interface MusicPlaybackSnapshot {
  albumArtist?:string;trackNumber?:number;albumTrackCount?:number;playbackType?:string;
  duration:number|null;position:number|null;playing:boolean;rate:number;
 }
-export interface ScrobblerSettings { url: string; enabled: boolean; token?: string }
+export interface ScrobblerSettings { url: string; enabled: boolean; token?: string; transferQueue?: boolean }
 export interface ScrobblerState {
   url: string;
   enabled: boolean;

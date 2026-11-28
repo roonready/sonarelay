@@ -24,7 +24,8 @@ export function registerScrobbler(ui: WebContents) {
   ipcMain.handle('scrobbler:save', async (event, input: ScrobblerSettings) => {
     if (event.sender !== ui) throw new Error('Forbidden');
     if (!input || typeof input.url !== 'string' || input.url.length > 2048 || typeof input.enabled !== 'boolean' ||
-        (input.token !== undefined && (typeof input.token !== 'string' || input.token.length > 128))) {
+        (input.token !== undefined && (typeof input.token !== 'string' || input.token.length > 128)) ||
+        (input.transferQueue !== undefined && typeof input.transferQueue !== 'boolean')) {
       throw new Error('Invalid settings');
     }
     return service.configure(input);
