@@ -104,18 +104,18 @@ test('pauses, frozen playback, seeks and long metadata gaps do not earn listenin
  for(let t=11;t<70;t++)tracker.observe(track(10,{playing:false}),settings,t*1000,epoch+t*1000);
  tracker.observe(track(95),settings,70000,epoch+70000);tracker.observe(track(96),settings,71000,epoch+71000);
  tracker.observe(track(96),settings,72000,epoch+72000);tracker.observe(track(99),settings,90000,epoch+90000);
- assert.equal(tracker.current.listened,11);assert.equal(tracker.current.scrobble,false);
+ assert.equal(tracker.listening.current.listened,11);assert.equal(tracker.listening.current.submitted,false);
 });
 test('replaying the same track starts fresh and late track ID does not duplicate Now Playing',()=>{
  const tracker=new LastfmTracker();const events=collect(tracker,60);assert.equal(events.filter(e=>e.method==='track.scrobble').length,1);
- tracker.observe(track(0),settings,61000,epoch+61000);assert.equal(tracker.current.listened,0);
+ tracker.observe(track(0),settings,61000,epoch+61000);assert.equal(tracker.listening.current.listened,0);
  assert.equal(tracker.observe(track(1),settings,62000,epoch+62000)[0].method,'track.updateNowPlaying');
  const late=new LastfmTracker();late.observe(track(0,{trackId:''}),settings,0,epoch);late.observe(track(1,{trackId:''}),settings,1000,epoch+1000);
  assert.deepEqual(late.observe(track(2),settings,2000,epoch+2000),[]);
 });
 test('disabled features submit nothing, and paused initial metadata does not backdate playback',()=>{
  const tracker=new LastfmTracker();for(let i=0;i<100;i++)assert.deepEqual(tracker.observe(track(i),{scrobbling:false,nowPlaying:false},i*1000,epoch+i*1000),[]);
- tracker.reset();tracker.observe(track(0,{playing:false}),settings,0,epoch);tracker.observe(track(0),settings,60000,epoch+60000);assert.equal(tracker.current.startedAt,1700000060);
+ tracker.reset();tracker.observe(track(0,{playing:false}),settings,0,epoch);tracker.observe(track(0),settings,60000,epoch+60000);assert.equal(tracker.listening.current.startedAt,1700000060);
 });
 test('desktop auth requires explicit browser confirmation, publishes no secrets, restores and disconnects session',async()=>{
  const store=mockStorage(),{client,calls}=mockClient(),urls=[];const service=new LastfmService(store,client,async url=>urls.push(url));await service.ready;
@@ -175,7 +175,7 @@ test('revoked sessions disconnect without leaking API credentials or stopping pl
 });
 
 test('Now Playing toggle preserves scrobble listening time; re-enabling scrobbling never duplicates an accepted play',()=>{
- const tracker=new LastfmTracker();collect(tracker,49);tracker.preferencesChanged(settings,{...settings,nowPlaying:false});assert.equal(tracker.current.listened,49);
+ const tracker=new LastfmTracker();collect(tracker,49);tracker.preferencesChanged(settings,{...settings,nowPlaying:false});assert.equal(tracker.listening.current.listened,49);
  const events=tracker.observe(track(50),{...settings,nowPlaying:false},50000,epoch+50000);assert.equal(events[0].method,'track.scrobble');
  tracker.preferencesChanged(settings,{scrobbling:false,nowPlaying:true});tracker.preferencesChanged({scrobbling:false,nowPlaying:true},settings);
  for(let i=51;i<110;i++)assert.ok(!tracker.observe(track(i),settings,i*1000,epoch+i*1000).some(e=>e.method==='track.scrobble'));

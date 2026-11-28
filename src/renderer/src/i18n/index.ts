@@ -25,7 +25,8 @@ export async function initializeLanguage() {
   try { saved = localStorage.getItem(languageStorageKey); } catch { /* Storage may be unavailable. */ }
   let systemLanguage = '';
   if (!isLanguage(saved)) {
-    try { systemLanguage = await window.bridge.getSystemLanguage(); } catch { /* Use English. */ }
+    try { systemLanguage = await window.bridge?.getSystemLanguage() || navigator.language; }
+    catch { systemLanguage = navigator.language; }
   }
   i18n.global.locale.value = initialLanguage(saved, systemLanguage);
   document.documentElement.lang = i18n.global.locale.value;

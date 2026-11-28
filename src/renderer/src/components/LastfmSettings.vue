@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
+import ScrobblerSettings from './ScrobblerSettings.vue';
 import { localizeError, supportedLanguages, selectLanguage } from '../i18n';
 const { t, d, locale } = useI18n();
 import { onMounted, onUnmounted, ref } from 'vue';
@@ -45,6 +46,7 @@ async function setting(key:keyof LastfmPreferences,event:Event){
    <button v-if="state.connected||state.pendingAuthorization||state.error" :disabled="state.busy" @click="action('disconnect')">{{ t('lastfm.disconnect') }}</button>
    <p v-if="error||state.error" class="error" role="alert">{{ error ? (error.startsWith('lastfm.') ? t(error) : localizeError(error)) : localizeError(state.error) }}</p>
   </section>
+  <ScrobblerSettings />
  </details>
 </template>
 <style scoped>

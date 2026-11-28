@@ -2,6 +2,11 @@
 
 Versions follow Semantic Versioning. Stable releases use `x.y.z`; beta releases use `x.y.z-beta.N`.
 
+## [1.4.0-beta.13] - 2026-11-28
+
+- Add Audio Scrobbler settings, authenticated delivery, Now Playing and artwork uploads.
+- Accept private LAN addresses for Audio Scrobbler servers.
+
 ## [1.4.0-beta.12] - 2026-11-28
 
 - Read the Windows ARP cache once per receiver discovery cycle.

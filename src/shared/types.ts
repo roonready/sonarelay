@@ -25,6 +25,9 @@ export interface BridgeApi {
   installUpdate(): Promise<void>;
   onUpdateState(callback: (state: AppUpdateState) => void): () => void;
   getSystemLanguage(): Promise<string>;
+  scrobblerState(): Promise<ScrobblerState>;
+  saveScrobbler(settings: ScrobblerSettings): Promise<ScrobblerState>;
+  onScrobblerState(callback: (state: ScrobblerState) => void): () => void;
   lastfmState():Promise<LastfmState>;
   lastfmOpenProfile():Promise<void>;
   lastfmConnect():Promise<LastfmState>;
@@ -62,8 +65,18 @@ export interface MusicMetadataSnapshot {
 export interface MusicPlaybackSnapshot {
  sourceId?:string;
  title:string;artist:string;album:string;trackId:string;
- albumArtist?:string;trackNumber?:number;
+ albumArtist?:string;trackNumber?:number;albumTrackCount?:number;playbackType?:string;
  duration:number|null;position:number|null;playing:boolean;rate:number;
+}
+export interface ScrobblerSettings { url: string; enabled: boolean; token?: string }
+export interface ScrobblerState {
+  url: string;
+  enabled: boolean;
+  hasToken: boolean;
+  pending: number;
+  rejected: number;
+  lastSent: number | null;
+  error: '' | 'storage' | 'auth' | 'endpoint' | 'retry' | 'artwork';
 }
 export interface LastfmPreferences {scrobbling:boolean;nowPlaying:boolean}
 export interface LastfmState extends LastfmPreferences {

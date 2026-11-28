@@ -13,6 +13,15 @@ import AppUpdates from '../components/AppUpdates.vue';
 import ProxySettings from '../components/ProxySettings.vue';
 const store = useDevices();
 const media = shallowRef<MusicMetadataSnapshot>();
+const trackDuration = computed(() => {
+  const duration = media.value?.playback?.duration;
+  if (duration == null || !Number.isFinite(duration) || duration <= 0) return '';
+  const seconds = Math.floor(duration);
+  const minutes = Math.floor(seconds / 60);
+  const remainder = String(seconds % 60).padStart(2, '0');
+  if (minutes < 60) return `${minutes}:${remainder}`;
+  return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}:${remainder}`;
+});
 const lastfm = shallowRef<LastfmState>();
 const profileError = shallowRef(false);
 const profileUrl = computed(() => lastfm.value?.connected && lastfm.value.username
@@ -54,7 +63,9 @@ async function openLastfmProfile() {
       <div>
         <strong>{{ media?.playback?.title || t('monitor.waiting') }}</strong>
         <p v-if="media?.playback?.artist">{{ media.playback.artist }}</p>
-        <p v-if="media?.playback?.sourceId">{{ media.playback.sourceId }}</p>
+        <p v-if="media?.playback?.album.trim()">{{ media.playback.album }}</p>
+        <p v-if="trackDuration">{{ t('monitor.duration', { duration: trackDuration }) }}</p>
+        <p v-if="media?.playback?.playbackType">{{ t('monitor.playbackType', { type: media.playback.playbackType }) }}</p>
       </div>
     </section>
     <a v-if="profileUrl" class="lastfm-profile" :href="profileUrl" @click.prevent="openLastfmProfile">

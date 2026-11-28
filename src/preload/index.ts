@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { BridgeApi, DiscoveryState, LiveState, MusicMetadataSnapshot, LastfmState, AppUpdateState } from '../shared/types';
+import type { BridgeApi, DiscoveryState, LiveState, MusicMetadataSnapshot, LastfmState, AppUpdateState, ScrobblerState } from '../shared/types';
 const api: BridgeApi = {
   getProxySettings:()=>ipcRenderer.invoke('proxy:get'),
   saveProxySettings:settings=>ipcRenderer.invoke('proxy:save',settings),
@@ -13,6 +13,13 @@ const api: BridgeApi = {
     ipcRenderer.on('updates:state',listener);return ()=>ipcRenderer.removeListener('updates:state',listener);
   },
   getSystemLanguage:()=>ipcRenderer.invoke('app:system-language'),
+  scrobblerState: () => ipcRenderer.invoke('scrobbler:get'),
+  saveScrobbler: settings => ipcRenderer.invoke('scrobbler:save', settings),
+  onScrobblerState: callback => {
+    const listener = (_event: Electron.IpcRendererEvent, state: ScrobblerState) => callback(state);
+    ipcRenderer.on('scrobbler:state', listener);
+    return () => ipcRenderer.removeListener('scrobbler:state', listener);
+  },
   lastfmState:()=>ipcRenderer.invoke('lastfm:get'),
   lastfmOpenProfile:()=>ipcRenderer.invoke('lastfm:open-profile'),
   lastfmConnect:()=>ipcRenderer.invoke('lastfm:connect'),

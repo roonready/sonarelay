@@ -5,6 +5,7 @@ import { registerHandlers } from './ipc/handlers';
 import { configureBackgroundAudio } from './runtime/background-audio';
 import { loopbackSampleRate, registerWindowsMedia } from './runtime/windows-media';
 import { registerLastfm } from './lastfm/ipc';
+import { registerScrobbler } from './scrobbler/ipc';
 import { registerUpdates } from './updates/ipc';
 import { configureProfile } from './runtime/profile';
 import { registerProxy } from './network/proxy';
@@ -23,7 +24,14 @@ function createWindow() {
   });
   const proxy = registerProxy(window.webContents);
   const lastfm=registerLastfm(window.webContents,profile.credentialsFallback,proxy.transport,proxy.browserProxy);
-  const media = registerWindowsMedia(window.webContents, lastfm.consume);
+  const scrobbler = registerScrobbler(window.webContents);
+  const media = registerWindowsMedia(window.webContents, snapshot => {
+    lastfm.consume(snapshot);
+    scrobbler.consume(snapshot);
+  });
+  window.webContents.on('preload-error', (_event, file, error) => {
+    console.error('SonaRelay preload failed:', file, error.message);
+  });
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', event => event.preventDefault());
   const discovery = new Discovery();
@@ -41,7 +49,7 @@ function createWindow() {
     closing=true;
     const lastfmShutdown=lastfm.dispose();
     const metadataShutdown=media.dispose();
-    shutdownTask=Promise.allSettled([cleanup(), lastfmShutdown, metadataShutdown]).then(async results=>{
+    shutdownTask=Promise.allSettled([cleanup(), lastfmShutdown, scrobbler.dispose(), metadataShutdown]).then(async results=>{
       await discovery.dispose();
       for (const result of results) if (result.status==='rejected') throw result.reason;
     });

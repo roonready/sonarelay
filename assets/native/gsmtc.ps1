@@ -54,6 +54,7 @@ try {
                 $selected = $item
                 $playing = $isPlaying
                 $rate = $playbackInfo.PlaybackRate
+                $sessionPlaybackType = $playbackInfo.PlaybackType
             }
         }
         $result = $null
@@ -83,8 +84,12 @@ try {
                 $result = @{sourceId=$selected.SourceAppUserModelId; artist=[string]$media.Artist;
                     title=[string]$media.Title; album=[string]$media.AlbumTitle; playing=$playing;
                     position=$position; duration=$duration; rate=$rate; artwork=$art}
+                $playbackType = $media.PlaybackType
+                if ($null -eq $playbackType) { $playbackType = $sessionPlaybackType }
+                if ($null -ne $playbackType) { $result.playbackType = [string]$playbackType }
                 if (-not [string]::IsNullOrWhiteSpace($media.AlbumArtist)) { $result.albumArtist = [string]$media.AlbumArtist }
                 if ($media.TrackNumber -gt 0) { $result.trackNumber = [long]$media.TrackNumber }
+                if ($media.AlbumTrackCount -gt 0) { $result.albumTrackCount = [long]$media.AlbumTrackCount }
             } catch {
                 $result = @{sourceId=$selected.SourceAppUserModelId; artist=''; title=''; album='';
                     playing=$playing; position=$null; duration=$null; rate=$rate; artwork=$null}
